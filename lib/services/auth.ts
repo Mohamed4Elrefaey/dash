@@ -46,7 +46,7 @@ export function validateLoginForm(email: string, password: string): ValidationRe
 export const authService = {
   login: async (credentials: LoginCredentials): Promise<LoginResponse> => {
     try {
-      const response = await apiClient<LoginResponse>("/api/auth/login", {
+      const response = await apiClient<LoginResponse>("/api/admin/login", {
         method: "POST",
         body: credentials,
       })
