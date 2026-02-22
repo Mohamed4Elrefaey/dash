@@ -20,19 +20,19 @@ const mainMenuItems = [
   { label: "نظرة عامة", href: "/dashboard", icon: LayoutGrid },
   { label: "ادارة الاطفال", href: "/dashboard/children", icon: Baby },
   { label: "ادارة التطعيمات", href: "/dashboard/vaccinations", icon: Syringe },
-  { label: "دليل الاطباء و العيادات", href: "#", icon: Stethoscope },
+  { label: "دليل الاطباء و العيادات", href: "/dashboard/doctors", icon: Stethoscope },
 ]
 
 const systemMenuItems = [
-  { label: "ادارة المحتوى", href: "#", icon: FileText },
-  { label: "ادارة المحادثة الالية", href: "#", icon: Bot },
-  { label: "الاشعارات", href: "#", icon: Bell },
+  { label: "ادارة المحتوى", href: "/dashboard/content", icon: FileText },
+  { label: "ادارة المحادثة الالية", href: "/dashboard/chatbot", icon: Bot },
+  { label: "الاشعارات", href: "/dashboard/notifications", icon: Bell },
 ]
 
 const reportsMenuItems = [
-  { label: "ادارة الموظفين", href: "#", icon: Users },
-  { label: "التقارير و التحليلات", href: "#", icon: BarChart3 },
-  { label: "اعدادات النظام", href: "#", icon: Settings },
+  { label: "ادارة الموظفين", href: "/dashboard/staff", icon: Users },
+  { label: "التقارير و التحليلات", href: "/dashboard/reports", icon: BarChart3 },
+  { label: "اعدادات النظام", href: "/dashboard/settings", icon: Settings },
 ]
 
 interface AppSidebarProps {
@@ -44,7 +44,7 @@ export function AppSidebar({ onLogout }: AppSidebarProps) {
 
   const isActive = (href: string) => {
     if (href === "/dashboard") return pathname === "/dashboard"
-    return pathname.startsWith(href) && href !== "#"
+    return pathname.startsWith(href)
   }
 
   const renderItem = (item: { label: string; href: string; icon: React.ElementType }) => {

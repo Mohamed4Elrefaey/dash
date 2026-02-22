@@ -1,48 +1,37 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/lib/auth-context"
 import { AppSidebar } from "@/components/dashboard/app-sidebar"
 import { Topbar } from "@/components/dashboard/topbar"
-
-interface User {
-  name: string
-  role: string
-}
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { user, isAuthenticated, isLoading, logout } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
-    const stored = sessionStorage.getItem("khatwa_user")
-    if (stored) {
-      setUser(JSON.parse(stored))
-    } else {
+    if (!isLoading && !isAuthenticated) {
       router.push("/")
     }
-    setLoading(false)
-  }, [router])
+  }, [isLoading, isAuthenticated, router])
 
-  const handleLogout = () => {
-    sessionStorage.removeItem("khatwa_user")
-    router.push("/")
-  }
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <p className="text-sm text-muted-foreground">جارٍ التحميل...</p>
+        </div>
       </div>
     )
   }
 
-  if (!user) return null
+  if (!isAuthenticated || !user) return null
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -52,7 +41,7 @@ export default function DashboardLayout({
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
       {/* Sidebar - right side in RTL */}
-      <AppSidebar onLogout={handleLogout} />
+      <AppSidebar onLogout={logout} />
     </div>
   )
 }

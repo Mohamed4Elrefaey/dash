@@ -1,54 +1,58 @@
 "use client"
 
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react"
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
+import { getToken, getStoredUser, removeToken } from "@/lib/api-client"
+import { authService } from "@/lib/services/auth"
 
 interface User {
   name: string
   role: string
+  email?: string
 }
 
 interface AuthContextType {
   user: User | null
   isAuthenticated: boolean
-  login: (username: string, password: string) => boolean
+  isLoading: boolean
+  login: (email: string, password: string) => Promise<void>
   logout: () => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(() => {
-    if (typeof window !== "undefined") {
-      const stored = sessionStorage.getItem("khatwa_user")
-      return stored ? JSON.parse(stored) : null
-    }
-    return null
-  })
+  const [user, setUser] = useState<User | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
 
+  useEffect(() => {
+    const token = getToken()
+    const storedUser = getStoredUser()
+    if (token && storedUser) {
+      setUser(storedUser)
+    }
+    setIsLoading(false)
+  }, [])
+
   const login = useCallback(
-    (username: string, password: string) => {
-      if (username === "محمد احمد" && password === "12345678") {
-        const userData: User = { name: "محمد احمد", role: "مدخل بيانات" }
-        setUser(userData)
-        sessionStorage.setItem("khatwa_user", JSON.stringify(userData))
-        router.push("/dashboard")
-        return true
-      }
-      return false
+    async (email: string, password: string) => {
+      const response = await authService.login({ email, password })
+      const userData: User = response.user || { name: email, role: "مستخدم" }
+      setUser(userData)
+      router.push("/dashboard")
     },
     [router],
   )
 
   const logout = useCallback(() => {
+    authService.logout()
     setUser(null)
-    sessionStorage.removeItem("khatwa_user")
     router.push("/")
   }, [router])
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, logout }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user && !!getToken(), isLoading, login, logout }}>
       {children}
     </AuthContext.Provider>
   )

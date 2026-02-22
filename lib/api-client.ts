@@ -4,32 +4,92 @@ interface RequestOptions {
   method?: string
   body?: unknown
   headers?: Record<string, string>
+  isFormData?: boolean
+}
+
+export class ApiError extends Error {
+  status: number
+  errors?: Record<string, string[]>
+
+  constructor(message: string, status: number, errors?: Record<string, string[]>) {
+    super(message)
+    this.name = "ApiError"
+    this.status = status
+    this.errors = errors
+  }
+}
+
+export function getToken(): string | null {
+  if (typeof window === "undefined") return null
+  return localStorage.getItem("khatwa_token")
+}
+
+export function setToken(token: string): void {
+  localStorage.setItem("khatwa_token", token)
+}
+
+export function removeToken(): void {
+  localStorage.removeItem("khatwa_token")
+  localStorage.removeItem("khatwa_user")
+}
+
+export function getStoredUser(): { name: string; role: string; email?: string } | null {
+  if (typeof window === "undefined") return null
+  const stored = localStorage.getItem("khatwa_user")
+  return stored ? JSON.parse(stored) : null
+}
+
+export function setStoredUser(user: { name: string; role: string; email?: string }): void {
+  localStorage.setItem("khatwa_user", JSON.stringify(user))
 }
 
 export async function apiClient<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
-  const { method = "GET", body, headers = {} } = options
+  const { method = "GET", body, headers = {}, isFormData = false } = options
 
-  const token = typeof window !== "undefined" ? localStorage.getItem("khatwa_token") : null
+  const token = getToken()
 
   const config: RequestInit = {
     method,
     headers: {
-      "Content-Type": "application/json",
+      ...(isFormData ? {} : { "Content-Type": "application/json" }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...headers,
     },
   }
 
   if (body) {
-    config.body = JSON.stringify(body)
+    config.body = isFormData ? (body as FormData) : JSON.stringify(body)
   }
 
   const res = await fetch(`${BASE_URL}${endpoint}`, config)
 
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}))
-    throw new Error(errorData.message || `خطأ في الطلب: ${res.status}`)
+  if (res.status === 401) {
+    removeToken()
+    if (typeof window !== "undefined") {
+      window.location.href = "/"
+    }
+    throw new ApiError("انتهت صلاحية الجلسة، يرجى تسجيل الدخول مرة أخرى", 401)
   }
 
-  return res.json()
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}))
+    const message = errorData.message || errorData.error || getArabicErrorMessage(res.status)
+    throw new ApiError(message, res.status, errorData.errors)
+  }
+
+  const text = await res.text()
+  if (!text) return {} as T
+  return JSON.parse(text)
+}
+
+function getArabicErrorMessage(status: number): string {
+  switch (status) {
+    case 400: return "البيانات المدخلة غير صحيحة"
+    case 403: return "ليس لديك صلاحية للوصول"
+    case 404: return "العنصر المطلوب غير موجود"
+    case 409: return "يوجد تعارض في البيانات"
+    case 422: return "البيانات المدخلة غير مكتملة"
+    case 500: return "حدث خطأ في الخادم، يرجى المحاولة لاحقاً"
+    default: return `حدث خطأ غير متوقع (${status})`
+  }
 }

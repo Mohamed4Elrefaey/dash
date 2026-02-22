@@ -15,8 +15,25 @@ export interface DoctorPayload {
   latitude: number
 }
 
+export interface Doctor {
+  id: string | number
+  name: string
+  imageUrl?: string
+  specialty: string
+  bio?: string
+  whatsappNumber?: string
+  clinics?: string[]
+  workingHours?: string
+  price?: number
+  address?: string
+  phone?: string
+  longitude?: number
+  latitude?: number
+  [key: string]: unknown
+}
+
 export const doctorsService = {
-  getAll: () => apiClient<unknown[]>("/api/doctors"),
-  create: (data: DoctorPayload) => apiClient<unknown>("/api/doctors", { method: "POST", body: data }),
-  getNearby: () => apiClient<unknown[]>("/api/doctors/nearby"),
+  getAll: () => apiClient<Doctor[]>("/api/doctors"),
+  create: (data: DoctorPayload) => apiClient<Doctor>("/api/doctors", { method: "POST", body: data }),
+  getNearby: () => apiClient<Doctor[]>("/api/doctors/nearby"),
 }
