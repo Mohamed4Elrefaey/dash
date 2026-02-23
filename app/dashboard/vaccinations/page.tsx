@@ -6,11 +6,15 @@ import { mockVaccinations, type Vaccination } from "@/lib/mock-data"
 import { StatCard } from "@/components/dashboard/stat-card"
 import { StatusBadge } from "@/components/dashboard/status-badge"
 import { AddVaccinationModal } from "@/components/dashboard/add-vaccination-modal"
+import { ConfirmDialog } from "@/components/dashboard/confirm-dialog"
+import { toast } from "sonner"
 
 export default function VaccinationsPage() {
   const [vaccinations, setVaccinations] = useState<Vaccination[]>(mockVaccinations)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingVaccination, setEditingVaccination] = useState<Vaccination | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<Vaccination | null>(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
 
   const handleAdd = (data: Omit<Vaccination, "id">) => {
     const newVaccination: Vaccination = {
@@ -19,6 +23,7 @@ export default function VaccinationsPage() {
     }
     setVaccinations((prev) => [...prev, newVaccination])
     setIsModalOpen(false)
+    toast.success("تم إضافة التطعيم بنجاح")
   }
 
   const handleEdit = (data: Omit<Vaccination, "id">) => {
@@ -30,10 +35,18 @@ export default function VaccinationsPage() {
     )
     setEditingVaccination(null)
     setIsModalOpen(false)
+    toast.success("تم حفظ التعديلات بنجاح")
   }
 
-  const handleDelete = (id: string) => {
-    setVaccinations((prev) => prev.filter((v) => v.id !== id))
+  const handleDelete = () => {
+    if (!deleteTarget) return
+    setDeleteLoading(true)
+    setTimeout(() => {
+      setVaccinations((prev) => prev.filter((v) => v.id !== deleteTarget.id))
+      setDeleteTarget(null)
+      setDeleteLoading(false)
+      toast.success("تم حذف التطعيم بنجاح")
+    }, 500)
   }
 
   const openAddModal = () => {
@@ -69,7 +82,7 @@ export default function VaccinationsPage() {
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard
           title="إجمالي التطعيمات"
-          value="١٨"
+          value={vaccinations.length.toString()}
           icon={Syringe}
           iconBgColor="bg-[#e8f5f1]"
         />
@@ -139,7 +152,7 @@ export default function VaccinationsPage() {
                         تعديل
                       </button>
                       <button
-                        onClick={() => handleDelete(vaccination.id)}
+                        onClick={() => setDeleteTarget(vaccination)}
                         className="inline-flex items-center gap-1 rounded-lg border border-destructive px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/5 transition-colors"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -163,6 +176,19 @@ export default function VaccinationsPage() {
         }}
         onSubmit={editingVaccination ? handleEdit : handleAdd}
         initialData={editingVaccination}
+      />
+
+      {/* Delete Confirm */}
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title="تاكيد الحذف"
+        message={`هل أنت متأكد من حذف التطعيم "${deleteTarget?.name}" من الجدول ؟ سوف يتم حذف التطعيم من الجدول بشكل نهائي`}
+        confirmLabel="نعم، احذف"
+        cancelLabel="إلغاء"
+        variant="danger"
+        loading={deleteLoading}
       />
     </div>
   )

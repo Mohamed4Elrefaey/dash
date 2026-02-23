@@ -1,32 +1,38 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { User, Lock, Eye, EyeOff } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
+import { validateLoginForm } from "@/lib/services/auth";
 
 export default function LoginPage() {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setLoading(true);
+    setFieldErrors({});
 
-    await new Promise((r) => setTimeout(r, 600));
-
-    if (username && password.length >= 6) {
-      const userData = { name: username || "محمد احمد", role: "مدخل بيانات" };
-      sessionStorage.setItem("khatwa_user", JSON.stringify(userData));
-      router.push("/dashboard");
-    } else {
-      setError("يرجي التأكد من اسم المستخدم وكلمة المرور");
+    const validation = validateLoginForm(email, password);
+    if (!validation.valid) {
+      setFieldErrors(validation.errors);
+      return;
     }
-    setLoading(false);
+
+    setLoading(true);
+    try {
+      await login(email, password);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "حدث خطأ في تسجيل الدخول");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -80,21 +86,31 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-5" noValidate>
             <div>
               <label className="mb-2 block text-sm font-semibold text-foreground">
-                اسم المستخدم
+                البريد الإلكتروني
               </label>
               <div className="relative">
                 <User className="absolute start-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <input
-                  type="text"
-                  placeholder="ادخل اسم المستخدم"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="w-full rounded-lg border border-border bg-secondary py-3 ps-11 pe-4 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  type="email"
+                  placeholder="ادخل البريد الإلكتروني"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setFieldErrors((prev) => ({ ...prev, email: undefined }));
+                  }}
+                  className={`w-full rounded-lg border py-3 ps-11 pe-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 ${
+                    fieldErrors.email
+                      ? "border-destructive bg-destructive/5 focus:border-destructive focus:ring-destructive"
+                      : "border-border bg-secondary focus:border-primary focus:ring-primary"
+                  }`}
                 />
               </div>
+              {fieldErrors.email && (
+                <p className="mt-1 text-xs text-destructive">{fieldErrors.email}</p>
+              )}
             </div>
 
             <div>
@@ -107,8 +123,15 @@ export default function LoginPage() {
                   type={showPassword ? "text" : "password"}
                   placeholder="ادخل كلمة المرور"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-lg border border-border bg-secondary py-3 ps-11 pe-11 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setFieldErrors((prev) => ({ ...prev, password: undefined }));
+                  }}
+                  className={`w-full rounded-lg border py-3 ps-11 pe-11 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 ${
+                    fieldErrors.password
+                      ? "border-destructive bg-destructive/5 focus:border-destructive focus:ring-destructive"
+                      : "border-border bg-secondary focus:border-primary focus:ring-primary"
+                  }`}
                 />
                 <button
                   type="button"
@@ -119,9 +142,16 @@ export default function LoginPage() {
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
+              {fieldErrors.password && (
+                <p className="mt-1 text-xs text-destructive">{fieldErrors.password}</p>
+              )}
             </div>
 
-            {error && <p className="text-sm text-destructive">{error}</p>}
+            {error && (
+              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+                <p className="text-sm text-destructive">{error}</p>
+              </div>
+            )}
 
             <button
               type="submit"
