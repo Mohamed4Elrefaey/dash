@@ -1,8 +1,13 @@
-import { apiClient, setToken, setStoredUser, removeToken, ApiError } from "@/lib/api-client"
+import {
+  apiClient,
+  setToken,
+  setStoredUser,
+  removeToken,
+} from "@/lib/api-client"
 
 interface LoginResponse {
   token: string
-  user: {
+  user?: {
     name: string
     role: string
     email?: string
@@ -22,7 +27,13 @@ interface ValidationResult {
   }
 }
 
-export function validateLoginForm(email: string, password: string): ValidationResult {
+/* -------------------------
+   Form Validation
+-------------------------- */
+export function validateLoginForm(
+  email: string,
+  password: string
+): ValidationResult {
   const errors: ValidationResult["errors"] = {}
 
   if (!email.trim()) {
@@ -43,27 +54,41 @@ export function validateLoginForm(email: string, password: string): ValidationRe
   }
 }
 
+/* -------------------------
+   Auth Service
+-------------------------- */
 export const authService = {
   login: async (credentials: LoginCredentials): Promise<LoginResponse> => {
     try {
-      const response = await apiClient<LoginResponse>("/api/admin/login", {
+      const response = await apiClient<LoginResponse>("/api/auth/login", {
         method: "POST",
-        body: credentials,
+        body: credentials, // JSON Map { email, password }
       })
 
-      if (response.token) {
-        setToken(response.token)
-        setStoredUser(response.user || { name: credentials.email, role: "مستخدم" })
+      if (!response?.token) {
+        throw new Error("لم يتم استلام رمز الدخول من الخادم")
       }
 
-      return response
-    } catch (error) {
-      if (error instanceof ApiError) {
-        if (error.status === 401 || error.status === 400) {
-          throw new Error("البريد الإلكتروني أو كلمة المرور غير صحيحة")
+      // Save token
+      setToken(response.token)
+
+      // Save user info (if backend returns it)
+      setStoredUser(
+        response.user || {
+          name: credentials.email,
+          role: "Admin",
         }
+      )
+
+      return response
+    } catch (error: any) {
+      console.error("Login error:", error)
+
+      // Show backend message if exists
+      if (error?.message) {
         throw new Error(error.message)
       }
+
       throw new Error("حدث خطأ في الاتصال بالخادم")
     }
   },
