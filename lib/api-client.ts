@@ -1,4 +1,5 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://vax.teqnyah.com"
+const BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "https://vax.teqnyah.com"
 
 interface RequestOptions {
   method?: string
@@ -7,6 +8,9 @@ interface RequestOptions {
   isFormData?: boolean
 }
 
+/* =========================
+   Api Error Class
+========================= */
 export class ApiError extends Error {
   status: number
   errors?: Record<string, string[]>
@@ -19,6 +23,9 @@ export class ApiError extends Error {
   }
 }
 
+/* =========================
+   Token Helpers
+========================= */
 export function getToken(): string | null {
   if (typeof window === "undefined") return null
   return localStorage.getItem("khatwa_token")
@@ -33,6 +40,9 @@ export function removeToken(): void {
   localStorage.removeItem("khatwa_user")
 }
 
+/* =========================
+   User Helpers
+========================= */
 export function getStoredUser(): { name: string; role: string; email?: string } | null {
   if (typeof window === "undefined") return null
   const stored = localStorage.getItem("khatwa_user")
@@ -43,7 +53,13 @@ export function setStoredUser(user: { name: string; role: string; email?: string
   localStorage.setItem("khatwa_user", JSON.stringify(user))
 }
 
-export async function apiClient<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
+/* =========================
+   API Client
+========================= */
+export async function apiClient<T>(
+  endpoint: string,
+  options: RequestOptions = {}
+): Promise<T> {
   const { method = "GET", body, headers = {}, isFormData = false } = options
 
   const token = getToken()
@@ -61,35 +77,66 @@ export async function apiClient<T>(endpoint: string, options: RequestOptions = {
     config.body = isFormData ? (body as FormData) : JSON.stringify(body)
   }
 
-  const res = await fetch(`${BASE_URL}${endpoint}`, config)
+  let res: Response
 
+  try {
+    res = await fetch(`${BASE_URL}${endpoint}`, config)
+  } catch {
+    // ⛔ network / CORS / server down
+    throw new ApiError("تعذر الاتصال بالخادم، تحقق من الإنترنت", 0)
+  }
+
+  // 🔐 Unauthorized
   if (res.status === 401) {
     removeToken()
     if (typeof window !== "undefined") {
-      window.location.href = "/"
+      window.location.href = "/login"
     }
-    throw new ApiError("انتهت صلاحية الجلسة، يرجى تسجيل الدخول مرة أخرى", 401)
+    throw new ApiError(
+      "انتهت صلاحية الجلسة، يرجى تسجيل الدخول مرة أخرى",
+      401
+    )
   }
 
+  // ❌ Other errors
   if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}))
-    const message = errorData.message || errorData.error || getArabicErrorMessage(res.status)
+    let errorData: any = {}
+    try {
+      errorData = await res.json()
+    } catch {}
+
+    const message =
+      errorData.message ||
+      errorData.error ||
+      getArabicErrorMessage(res.status)
+
     throw new ApiError(message, res.status, errorData.errors)
   }
 
+  // ✅ Success (handle empty response)
   const text = await res.text()
   if (!text) return {} as T
-  return JSON.parse(text)
+  return JSON.parse(text) as T
 }
 
+/* =========================
+   Arabic Error Messages
+========================= */
 function getArabicErrorMessage(status: number): string {
   switch (status) {
-    case 400: return "البيانات المدخلة غير صحيحة"
-    case 403: return "ليس لديك صلاحية للوصول"
-    case 404: return "العنصر المطلوب غير موجود"
-    case 409: return "يوجد تعارض في البيانات"
-    case 422: return "البيانات المدخلة غير مكتملة"
-    case 500: return "حدث خطأ في الخادم، يرجى المحاولة لاحقاً"
-    default: return `حدث خطأ غير متوقع (${status})`
+    case 400:
+      return "البيانات المدخلة غير صحيحة"
+    case 403:
+      return "ليس لديك صلاحية للوصول"
+    case 404:
+      return "العنصر المطلوب غير موجود"
+    case 409:
+      return "يوجد تعارض في البيانات"
+    case 422:
+      return "البيانات المدخلة غير مكتملة"
+    case 500:
+      return "حدث خطأ في الخادم، يرجى المحاولة لاحقاً"
+    default:
+      return `حدث خطأ غير متوقع (${status})`
   }
 }
