@@ -1,5 +1,4 @@
 import {
-  apiClient,
   setToken,
   setStoredUser,
   removeToken,
@@ -59,38 +58,21 @@ export function validateLoginForm(
 -------------------------- */
 export const authService = {
   login: async (credentials: LoginCredentials): Promise<LoginResponse> => {
-    try {
-      const response = await apiClient<LoginResponse>("/api/auth/login", {
-        method: "POST",
-        body: credentials, // JSON Map { email, password }
-      })
-
-      if (!response?.token) {
-        throw new Error("لم يتم استلام رمز الدخول من الخادم")
-      }
-
-      // Save token
-      setToken(response.token)
-
-      // Save user info (if backend returns it)
-      setStoredUser(
-        response.user || {
-          name: credentials.email,
-          role: "Admin",
-        }
-      )
-
-      return response
-    } catch (error: any) {
-      console.error("Login error:", error)
-
-      // Show backend message if exists
-      if (error?.message) {
-        throw new Error(error.message)
-      }
-
-      throw new Error("حدث خطأ في الاتصال بالخادم")
+    // Mock login logic
+    const mockResponse: LoginResponse = {
+      token: "mock-jwt-token",
+      user: {
+        name: "مسؤول النظام",
+        role: "مدير النظام",
+        email: credentials.email,
+      },
     }
+
+    // Save token and user
+    setToken(mockResponse.token)
+    setStoredUser(mockResponse.user!)
+
+    return Promise.resolve(mockResponse)
   },
 
   logout: () => {
