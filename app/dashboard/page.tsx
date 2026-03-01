@@ -5,7 +5,8 @@ import { Users, AlertTriangle, CheckCircle, FileText, ArrowLeft, TriangleAlert, 
 import { StatCard } from "@/components/dashboard/stat-card"
 import { DashboardChart } from "@/components/dashboard/dashboard-chart"
 import { LoadingSpinner } from "@/components/dashboard/loading-spinner"
-import { adminService, type AdminStats } from "@/lib/services/admin"
+import { adminRepository } from "@/lib/repositories/admin.repository"
+import { type AdminStats } from "@/lib/models/admin.model"
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<AdminStats | null>(null)
@@ -15,7 +16,7 @@ export default function DashboardPage() {
   useEffect(() => {
     async function fetchStats() {
       try {
-        const data = await adminService.getStats()
+        const data = await adminRepository.getDashboardStats()
         setStats(data)
       } catch {
         setError("تعذر تحميل البيانات")
@@ -97,15 +98,14 @@ function AlertsSection() {
   useEffect(() => {
     async function fetchAlerts() {
       try {
-        const data = await adminService.getDefaulters()
+        const data = await adminRepository.getAlerts(6)
         if (Array.isArray(data) && data.length > 0) {
-          setAlerts(data.slice(0, 6).map((item: unknown, i: number) => {
-            const d = item as Record<string, unknown>
+          setAlerts(data.map((item: { id?: string | number; title?: string; description?: string; time?: string; createdAt?: string }, i: number) => {
             return {
-              id: String(d.id ?? i),
-              title: String(d.title ?? "تطعيمات متأخرة جداً"),
-              description: String(d.description ?? "يوجد أطفال لديهم تطعيمات متأخرة"),
-              time: String(d.time ?? d.createdAt ?? "منذ ساعتين"),
+              id: String(item.id ?? i),
+              title: String(item.title ?? "تطعيمات متأخرة جداً"),
+              description: String(item.description ?? "يوجد أطفال لديهم تطعيمات متأخرة"),
+              time: String(item.time ?? item.createdAt ?? "منذ ساعتين"),
             }
           }))
         }

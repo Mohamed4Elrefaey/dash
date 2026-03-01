@@ -1,52 +1,75 @@
 "use client"
 
 import { useState } from "react"
+import { useEffect } from "react"
 import { Plus, Pencil, Trash2, Syringe, CheckCircle, AlertTriangle } from "lucide-react"
-import { mockVaccinations, type Vaccination } from "@/lib/mock-data"
+import { type Vaccine } from "@/lib/models/vaccine.model"
+import { vaccinesRepository } from "@/lib/repositories/vaccines.repository"
+import { adminRepository } from "@/lib/repositories/admin.repository"
+import { LoadingSpinner } from "@/components/dashboard/loading-spinner"
 import { StatCard } from "@/components/dashboard/stat-card"
 import { StatusBadge } from "@/components/dashboard/status-badge"
 import { AddVaccinationModal } from "@/components/dashboard/add-vaccination-modal"
 import { ConfirmDialog } from "@/components/dashboard/confirm-dialog"
 import { toast } from "sonner"
 
+import { AdminStats } from "@/lib/models/admin.model"
+
 export default function VaccinationsPage() {
-  const [vaccinations, setVaccinations] = useState<Vaccination[]>(mockVaccinations)
+  const [vaccinations, setVaccinations] = useState<Vaccine[]>([])
+  const [stats, setStats] = useState<AdminStats | null>(null)
+  const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [editingVaccination, setEditingVaccination] = useState<Vaccination | null>(null)
-  const [deleteTarget, setDeleteTarget] = useState<Vaccination | null>(null)
+  const [editingVaccination, setEditingVaccination] = useState<Vaccine | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<Vaccine | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
+  const [addLoading, setAddLoading] = useState(false)
 
-  const handleAdd = (data: Omit<Vaccination, "id">) => {
-    const newVaccination: Vaccination = {
-      ...data,
-      id: `v${Date.now()}`,
+  useEffect(() => {
+    fetchData()
+  }, [])
+
+  async function fetchData() {
+    try {
+      setLoading(true)
+      const [vData, sData] = await Promise.all([
+        vaccinesRepository.getVaccines(),
+        adminRepository.getDashboardStats()
+      ])
+      setVaccinations(vData)
+      setStats(sData)
+    } catch {
+      toast.error("تعذر تحميل بيانات التطعيمات")
+    } finally {
+      setLoading(false)
     }
-    setVaccinations((prev) => [...prev, newVaccination])
-    setIsModalOpen(false)
-    toast.success("تم إضافة التطعيم بنجاح")
   }
 
-  const handleEdit = (data: Omit<Vaccination, "id">) => {
-    if (!editingVaccination) return
-    setVaccinations((prev) =>
-      prev.map((v) =>
-        v.id === editingVaccination.id ? { ...v, ...data } : v,
-      ),
-    )
-    setEditingVaccination(null)
-    setIsModalOpen(false)
-    toast.success("تم حفظ التعديلات بنجاح")
+  const handleAdd = async (data: CreateVaccineDto) => {
+    setAddLoading(true)
+    try {
+      await vaccinesRepository.createVaccine(data)
+      setIsModalOpen(false)
+      toast.success("تم إضافة التطعيم بنجاح")
+      fetchData()
+    } catch (err: any) {
+      toast.error(err.message || "تعذر إضافة التطعيم")
+    } finally {
+      setAddLoading(false)
+    }
   }
 
-  const handleDelete = () => {
-    if (!deleteTarget) return
-    setDeleteLoading(true)
-    setTimeout(() => {
-      setVaccinations((prev) => prev.filter((v) => v.id !== deleteTarget.id))
-      setDeleteTarget(null)
-      setDeleteLoading(false)
-      toast.success("تم حذف التطعيم بنجاح")
-    }, 500)
+  const handleEdit = async (data: Partial<Vaccine>) => {
+    // Note: The provided Swagger doesn't have a PUT /vaccines/{id} endpoint,
+    // so we'll just show a message or use POST if the backend supports it as upsert.
+    toast.info("تحديث التطعيم غير متاح حالياً في النظام")
+    setIsModalOpen(false)
+  }
+
+  const handleDelete = async () => {
+    // Note: The provided Swagger doesn't have a DELETE /vaccines/{id} endpoint.
+    toast.info("حذف التطعيم غير متاح حالياً في النظام")
+    setDeleteTarget(null)
   }
 
   const openAddModal = () => {
@@ -54,10 +77,12 @@ export default function VaccinationsPage() {
     setIsModalOpen(true)
   }
 
-  const openEditModal = (vaccination: Vaccination) => {
+  const openEditModal = (vaccination: Vaccine) => {
     setEditingVaccination(vaccination)
     setIsModalOpen(true)
   }
+
+  if (loading) return <LoadingSpinner message="جارٍ تحميل بيانات التطعيمات..." />
 
   return (
     <div>
@@ -88,13 +113,13 @@ export default function VaccinationsPage() {
         />
         <StatCard
           title="معدل الالتزام العام"
-          value="٩٤.٧%"
+          value={stats?.complianceRate ? `${stats.complianceRate}%` : "---"}
           icon={CheckCircle}
           iconBgColor="bg-[#e8f5f1]"
         />
         <StatCard
           title="تطعيمات متاخره"
-          value="٣,٢٤٧"
+          value={stats?.lateVaccinations?.toLocaleString("ar-EG") ?? "---"}
           icon={AlertTriangle}
           iconBgColor="bg-destructive/10"
         />

@@ -3,8 +3,10 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Plus, Search, Filter, ChevronDown, Eye, Baby, AlertCircle } from "lucide-react"
-import { childrenService, type Child } from "@/lib/services/children"
-import { adminService, type ChildrenByAge } from "@/lib/services/admin"
+import { childrenRepository } from "@/lib/repositories/children.repository"
+import { adminRepository } from "@/lib/repositories/admin.repository"
+import { type Child } from "@/lib/models/child.model"
+import { type ChildrenByAge } from "@/lib/models/admin.model"
 import { LoadingSpinner } from "@/components/dashboard/loading-spinner"
 import { AddChildModal, type ChildFormData } from "@/components/dashboard/add-child-modal"
 import { toast } from "sonner"
@@ -27,8 +29,8 @@ export default function ChildrenPage() {
   async function fetchChildren() {
     try {
       setLoading(true)
-      const data = await childrenService.getAll()
-      setChildren(Array.isArray(data) ? data : [])
+      const data = await childrenRepository.getChildren()
+      setChildren(data)
     } catch {
       setError("تعذر تحميل بيانات الأطفال")
     } finally {
@@ -38,17 +40,17 @@ export default function ChildrenPage() {
 
   async function fetchAgeDistribution() {
     try {
-      const data = await adminService.getChildrenByAge()
+      const data = await adminRepository.getAgeDistribution()
       if (Array.isArray(data)) setAgeDistribution(data)
     } catch {
       // Silent fail
     }
   }
 
-  async function handleAddChild(data: ChildFormData) {
+  async function handleAddChild(data: Child) {
     setAddLoading(true)
     try {
-      await childrenService.create(data)
+      await childrenRepository.createChild(data)
       toast.success("تم إضافة الطفل بنجاح")
       setIsAddModalOpen(false)
       fetchChildren()

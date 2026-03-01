@@ -3,19 +3,20 @@
 import { useState, useEffect } from "react"
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts"
 import { ChevronDown } from "lucide-react"
-import { adminService } from "@/lib/services/admin"
-import { monthlyVaccinationData } from "@/lib/mock-data"
+import { adminRepository } from "@/lib/repositories/admin.repository"
+
+import { ForecastData } from "@/lib/models/admin.model"
 
 export function DashboardChart() {
-  const [chartData, setChartData] = useState(monthlyVaccinationData)
+  const [chartData, setChartData] = useState<{ month: string; count: number }[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function fetchForecast() {
       try {
-        const data = await adminService.getForecast()
+        const data = await adminRepository.getForecast()
         if (Array.isArray(data) && data.length > 0) {
-          setChartData(data.map((item) => ({
+          setChartData(data.map((item: ForecastData) => ({
             month: String(item.month ?? ""),
             count: Number(item.predicted ?? item.actual ?? 0),
           })))

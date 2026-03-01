@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { Plus, Search, FileText, Eye, Pencil, Trash2, X, CheckCircle } from "lucide-react"
-import { articlesService, type Article, type ArticlePayload } from "@/lib/services/articles"
+import { articlesRepository } from "@/lib/repositories/articles.repository"
+import { type Article, type CreateArticleDto as ArticlePayload } from "@/lib/models/article.model"
 import { LoadingSpinner } from "@/components/dashboard/loading-spinner"
 import { ConfirmDialog } from "@/components/dashboard/confirm-dialog"
 import { StatCard } from "@/components/dashboard/stat-card"
@@ -34,8 +35,8 @@ export default function ContentPage() {
   async function fetchArticles() {
     try {
       setLoading(true)
-      const data = await articlesService.getAll()
-      setArticles(Array.isArray(data) ? data : [])
+      const data = await articlesRepository.getArticles()
+      setArticles(data)
     } catch {
       toast.error("تعذر تحميل المقالات")
     } finally {
@@ -46,7 +47,7 @@ export default function ContentPage() {
   async function handleAddArticle(data: ArticlePayload) {
     setAddLoading(true)
     try {
-      await articlesService.create(data)
+      await articlesRepository.createArticle(data)
       toast.success("تم إضافة المقال بنجاح")
       setIsAddModalOpen(false)
       fetchArticles()
@@ -59,7 +60,7 @@ export default function ContentPage() {
 
   async function handleViewArticle(article: Article) {
     try {
-      const full = await articlesService.getById(article.id)
+      const full = await articlesRepository.getArticleById(article.id)
       setViewingArticle(full)
     } catch {
       setViewingArticle(article)

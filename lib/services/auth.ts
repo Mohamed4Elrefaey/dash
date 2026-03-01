@@ -4,20 +4,7 @@ import {
   setStoredUser,
   removeToken,
 } from "@/lib/api-client"
-
-interface LoginResponse {
-  token: string
-  user?: {
-    name: string
-    role: string
-    email?: string
-  }
-}
-
-interface LoginCredentials {
-  email: string
-  password: string
-}
+import { LoginCredentials, LoginResponse, RegisterDto } from "@/lib/models/auth.model"
 
 interface ValidationResult {
   valid: boolean
@@ -59,38 +46,24 @@ export function validateLoginForm(
 -------------------------- */
 export const authService = {
   login: async (credentials: LoginCredentials): Promise<LoginResponse> => {
-    try {
-      const response = await apiClient<LoginResponse>("/api/auth/login", {
-        method: "POST",
-        body: credentials, // JSON Map { email, password }
-      })
+    const response = await apiClient<LoginResponse>("/auth/login", {
+      method: "POST",
+      body: credentials,
+    })
 
-      if (!response?.token) {
-        throw new Error("لم يتم استلام رمز الدخول من الخادم")
-      }
-
-      // Save token
+    if (response?.token) {
       setToken(response.token)
-
-      // Save user info (if backend returns it)
-      setStoredUser(
-        response.user || {
-          name: credentials.email,
-          role: "Admin",
-        }
-      )
-
-      return response
-    } catch (error: any) {
-      console.error("Login error:", error)
-
-      // Show backend message if exists
-      if (error?.message) {
-        throw new Error(error.message)
-      }
-
-      throw new Error("حدث خطأ في الاتصال بالخادم")
+      setStoredUser(response.user)
     }
+
+    return response
+  },
+
+  register: async (data: RegisterDto): Promise<void> => {
+    await apiClient("/auth/register", {
+      method: "POST",
+      body: data,
+    })
   },
 
   logout: () => {

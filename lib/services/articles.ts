@@ -1,28 +1,14 @@
 import { apiClient } from "@/lib/api-client"
-
-export interface ArticlePayload {
-  title: string
-  description: string
-  content: string
-  category: string
-  imageUrl: string
-}
-
-export interface Article {
-  id: string | number
-  title: string
-  description?: string
-  content?: string
-  category?: string
-  imageUrl?: string
-  author?: string
-  createdAt?: string
-  status?: string
-  [key: string]: unknown
-}
+import { Article, CreateArticleDto } from "@/lib/models/article.model"
+import { ApiResponse } from "@/lib/models/api.model"
 
 export const articlesService = {
-  getAll: () => apiClient<Article[]>("/api/articles"),
-  getById: (id: string | number) => apiClient<Article>(`/api/articles/${id}`),
-  create: (data: ArticlePayload) => apiClient<Article>("/api/articles", { method: "POST", body: data }),
+  getAll: (page = 1, limit = 10, category = "") =>
+    apiClient<ApiResponse<Article[]>>(`/articles?page=${page}&limit=${limit}&category=${category}`),
+
+  getById: (id: string | number) =>
+    apiClient<Article>(`/articles/${id}`),
+
+  create: (data: CreateArticleDto) =>
+    apiClient<Article>("/articles", { method: "POST", body: data }),
 }

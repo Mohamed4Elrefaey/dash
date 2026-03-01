@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from "react"
 import { X, Syringe, CheckCircle } from "lucide-react"
-import type { Vaccination } from "@/lib/mock-data"
+import { type Vaccine, type CreateVaccineDto } from "@/lib/models/vaccine.model"
 
 interface AddVaccinationModalProps {
   isOpen: boolean
   onClose: () => void
-  onSubmit: (data: Omit<Vaccination, "id">) => void
-  initialData?: Vaccination | null
+  onSubmit: (data: CreateVaccineDto) => void
+  initialData?: Vaccine | null
 }
 
 export function AddVaccinationModal({
@@ -54,10 +54,10 @@ export function AddVaccinationModal({
 
     onSubmit({
       name,
-      targetAge: targetAge || "شهرين",
-      doses: "جرعة واحدة",
-      coveragePercent: 0,
-      type: publishStatus,
+      description: description || "---",
+      ageInMonths: Number(targetAge) || 0,
+      doseInfo: "جرعة واحدة",
+      mandatory: publishStatus === "إلزامي",
     })
   }
 

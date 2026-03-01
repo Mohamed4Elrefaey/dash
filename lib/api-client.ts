@@ -1,5 +1,7 @@
 const BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "https://vax.teqnyah.com"
+  typeof window !== "undefined"
+    ? "/api-proxy"
+    : process.env.NEXT_PUBLIC_API_BASE_URL || "https://vax.teqnyah.com/api"
 
 interface RequestOptions {
   method?: string
@@ -89,8 +91,8 @@ export async function apiClient<T>(
   // 🔐 Unauthorized
   if (res.status === 401) {
     removeToken()
-    if (typeof window !== "undefined") {
-      window.location.href = "/login"
+    if (typeof window !== "undefined" && window.location.pathname !== "/") {
+      window.location.href = "/"
     }
     throw new ApiError(
       "انتهت صلاحية الجلسة، يرجى تسجيل الدخول مرة أخرى",
