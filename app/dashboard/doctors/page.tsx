@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { Plus, Search, Stethoscope, MapPin, Phone, Clock, Pencil, Trash2, Eye, X, CheckCircle } from "lucide-react"
-import { doctorsService, type Doctor, type DoctorPayload } from "@/lib/services/doctors"
+import { doctorsRepository } from "@/lib/repositories/doctors.repository"
+import { type Doctor, type CreateDoctorDto as DoctorPayload } from "@/lib/models/doctor.model"
 import { LoadingSpinner } from "@/components/dashboard/loading-spinner"
 import { ConfirmDialog } from "@/components/dashboard/confirm-dialog"
 import { StatCard } from "@/components/dashboard/stat-card"
@@ -24,8 +25,8 @@ export default function DoctorsPage() {
   async function fetchDoctors() {
     try {
       setLoading(true)
-      const data = await doctorsService.getAll()
-      setDoctors(Array.isArray(data) ? data : [])
+      const data = await doctorsRepository.getDoctors()
+      setDoctors(data)
     } catch {
       toast.error("تعذر تحميل بيانات الأطباء")
     } finally {
@@ -36,7 +37,7 @@ export default function DoctorsPage() {
   async function handleAddDoctor(data: DoctorPayload) {
     setAddLoading(true)
     try {
-      await doctorsService.create(data)
+      await doctorsRepository.createDoctor(data)
       toast.success("تم إضافة الطبيب بنجاح")
       setIsAddModalOpen(false)
       fetchDoctors()

@@ -3,13 +3,8 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
 import { getToken, getStoredUser, removeToken } from "@/lib/api-client"
-import { authService } from "@/lib/services/auth"
-
-interface User {
-  name: string
-  role: string
-  email?: string
-}
+import { authRepository } from "@/lib/repositories/auth.repository"
+import { type User } from "@/lib/models/auth.model"
 
 interface AuthContextType {
   user: User | null
@@ -37,8 +32,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(
     async (email: string, password: string) => {
-      const response = await authService.login({ email, password })
-      const userData: User = response.user || { name: email, role: "مستخدم" }
+      const response = await authRepository.login({ email, password })
+      const userData: User = response.user
       setUser(userData)
       router.push("/dashboard")
     },

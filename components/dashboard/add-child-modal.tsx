@@ -2,23 +2,13 @@
 
 import { useState, useEffect } from "react"
 import { X, Baby, CheckCircle } from "lucide-react"
+import { type CreateChildDto as ChildFormData } from "@/lib/models/child.model"
 
 interface AddChildModalProps {
   isOpen: boolean
   onClose: () => void
   onSubmit: (data: ChildFormData) => void
   loading?: boolean
-}
-
-export interface ChildFormData {
-  name: string
-  nationalId: string
-  dateOfBirth: string
-  gender: "boy" | "girl"
-  motherNationalId: string
-  governorate: string
-  city: string
-  healthUnit: string
 }
 
 const governorates = ["القاهرة", "الجيزة", "الإسكندرية", "الدقهلية", "الشرقية", "المنوفية", "الغربية", "كفر الشيخ", "البحيرة", "المنيا", "أسيوط", "سوهاج", "قنا", "الأقصر", "أسوان"]

@@ -1,0 +1,15 @@
+
+> my-project@0.1.0 dev
+> next dev
+
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.2:3000
+
+✓ Starting...
+✓ Ready in 738ms
+ GET / 200 in 3.5s (compile: 3.2s, render: 311ms)
+ GET / 200 in 91ms (compile: 7ms, render: 84ms)
+ GET / 200 in 62ms (compile: 4ms, render: 59ms)
+○ Compiling /dashboard ...
+ GET /dashboard 200 in 3.3s (compile: 3.3s, render: 66ms)
