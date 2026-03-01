@@ -47,7 +47,7 @@ export default function ChildrenPage() {
     }
   }
 
-  async function handleAddChild(data: any) {
+  async function handleAddChild(data: Child) {
     setAddLoading(true)
     try {
       await childrenRepository.createChild(data)

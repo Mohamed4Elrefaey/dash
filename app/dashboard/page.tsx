@@ -100,7 +100,7 @@ function AlertsSection() {
       try {
         const data = await adminRepository.getAlerts(6)
         if (Array.isArray(data) && data.length > 0) {
-          setAlerts(data.map((item: any, i: number) => {
+          setAlerts(data.map((item: { id?: string | number; title?: string; description?: string; time?: string; createdAt?: string }, i: number) => {
             return {
               id: String(item.id ?? i),
               title: String(item.title ?? "تطعيمات متأخرة جداً"),

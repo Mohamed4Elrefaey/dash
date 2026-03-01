@@ -13,9 +13,11 @@ import { AddVaccinationModal } from "@/components/dashboard/add-vaccination-moda
 import { ConfirmDialog } from "@/components/dashboard/confirm-dialog"
 import { toast } from "sonner"
 
+import { AdminStats } from "@/lib/models/admin.model"
+
 export default function VaccinationsPage() {
-  const [vaccinations, setVaccinations] = useState<any[]>([])
-  const [stats, setStats] = useState<any>(null)
+  const [vaccinations, setVaccinations] = useState<Vaccine[]>([])
+  const [stats, setStats] = useState<AdminStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingVaccination, setEditingVaccination] = useState<Vaccine | null>(null)
@@ -43,7 +45,7 @@ export default function VaccinationsPage() {
     }
   }
 
-  const handleAdd = async (data: any) => {
+  const handleAdd = async (data: CreateVaccineDto) => {
     setAddLoading(true)
     try {
       await vaccinesRepository.createVaccine(data)
@@ -57,7 +59,7 @@ export default function VaccinationsPage() {
     }
   }
 
-  const handleEdit = async (data: any) => {
+  const handleEdit = async (data: Partial<Vaccine>) => {
     // Note: The provided Swagger doesn't have a PUT /vaccines/{id} endpoint,
     // so we'll just show a message or use POST if the backend supports it as upsert.
     toast.info("تحديث التطعيم غير متاح حالياً في النظام")

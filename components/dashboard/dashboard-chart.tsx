@@ -5,8 +5,10 @@ import { Area, AreaChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tool
 import { ChevronDown } from "lucide-react"
 import { adminRepository } from "@/lib/repositories/admin.repository"
 
+import { ForecastData } from "@/lib/models/admin.model"
+
 export function DashboardChart() {
-  const [chartData, setChartData] = useState<any[]>([])
+  const [chartData, setChartData] = useState<{ month: string; count: number }[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -14,7 +16,7 @@ export function DashboardChart() {
       try {
         const data = await adminRepository.getForecast()
         if (Array.isArray(data) && data.length > 0) {
-          setChartData(data.map((item) => ({
+          setChartData(data.map((item: ForecastData) => ({
             month: String(item.month ?? ""),
             count: Number(item.predicted ?? item.actual ?? 0),
           })))
