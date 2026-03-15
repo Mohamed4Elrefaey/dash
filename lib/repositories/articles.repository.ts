@@ -10,4 +10,9 @@ export const articlesRepository = {
   getArticleById: (id: string | number) => articlesService.getById(id),
 
   createArticle: (data: CreateArticleDto) => articlesService.create(data),
+
+  updateArticle: (id: string | number, data: Partial<CreateArticleDto>) =>
+    articlesService.update(id, data),
+
+  deleteArticle: (id: string | number) => articlesService.delete(id),
 }

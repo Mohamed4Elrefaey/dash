@@ -26,9 +26,11 @@ export default function ContentPage() {
   const [activeStatus, setActiveStatus] = useState("الكل")
   const [activeCategory, setActiveCategory] = useState("الكل")
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [editingArticle, setEditingArticle] = useState<Article | null>(null)
   const [addLoading, setAddLoading] = useState(false)
   const [viewingArticle, setViewingArticle] = useState<Article | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Article | null>(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
 
   useEffect(() => { fetchArticles() }, [])
 
@@ -58,6 +60,37 @@ export default function ContentPage() {
     }
   }
 
+  async function handleUpdateArticle(data: ArticlePayload) {
+    if (!editingArticle) return
+    setAddLoading(true)
+    try {
+      await articlesRepository.updateArticle(editingArticle.id, data)
+      toast.success("تم تحديث المقال بنجاح")
+      setIsAddModalOpen(false)
+      setEditingArticle(null)
+      fetchArticles()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "تعذر تحديث المقال")
+    } finally {
+      setAddLoading(false)
+    }
+  }
+
+  async function handleDeleteArticle() {
+    if (!deleteTarget) return
+    setDeleteLoading(true)
+    try {
+      await articlesRepository.deleteArticle(deleteTarget.id)
+      toast.success("تم حذف المقال بنجاح")
+      setDeleteTarget(null)
+      fetchArticles()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "تعذر حذف المقال")
+    } finally {
+      setDeleteLoading(false)
+    }
+  }
+
   async function handleViewArticle(article: Article) {
     try {
       const full = await articlesRepository.getArticleById(article.id)
@@ -68,7 +101,7 @@ export default function ContentPage() {
   }
 
   const filteredArticles = articles.filter((a) => {
-    const matchesSearch = a.title?.includes(searchQuery) || a.description?.includes(searchQuery)
+    const matchesSearch = a.title?.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesStatus = activeStatus === "الكل" || a.status === activeStatus
     const matchesCategory = activeCategory === "الكل" || a.category === activeCategory
     return matchesSearch && matchesStatus && matchesCategory
@@ -101,7 +134,13 @@ export default function ContentPage() {
       {activeTab === "articles" && (
         <>
           <div className="mb-4 flex items-center justify-between">
-            <button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity">
+            <button
+              onClick={() => {
+                setEditingArticle(null)
+                setIsAddModalOpen(true)
+              }}
+              className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
+            >
               <Plus className="h-4 w-4" />انشاء مقال جديد
             </button>
           </div>
@@ -126,7 +165,7 @@ export default function ContentPage() {
 
           {filteredArticles.length === 0 ? (
             <div className="flex h-48 items-center justify-center rounded-xl border border-border bg-card">
-              <p className="text-muted-foreground">{searchQuery ? "لا توجد نتائج مطابقة" : "لا توجد مقالات"}</p>
+              <p className="text-muted-foreground">{searchQuery ? "لم يتم العثور على مقالات" : "لا توجد مقالات"}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -152,7 +191,15 @@ export default function ContentPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <button onClick={() => handleViewArticle(article)} className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 transition-opacity"><Eye className="h-3.5 w-3.5" />عرض</button>
-                      <button className="inline-flex items-center gap-1 rounded-lg border border-primary px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/5 transition-colors"><Pencil className="h-3.5 w-3.5" />تعديل</button>
+                      <button
+                        onClick={() => {
+                          setEditingArticle(article)
+                          setIsAddModalOpen(true)
+                        }}
+                        className="inline-flex items-center gap-1 rounded-lg border border-primary px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/5 transition-colors"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />تعديل
+                      </button>
                       <button onClick={() => setDeleteTarget(article)} className="inline-flex items-center gap-1 rounded-lg border border-destructive px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/5 transition-colors"><Trash2 className="h-3.5 w-3.5" />حذف</button>
                     </div>
                   </div>
@@ -199,28 +246,71 @@ export default function ContentPage() {
         </div>
       )}
 
-      {/* Add Article Modal */}
-      <AddArticleModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onSubmit={handleAddArticle} loading={addLoading} />
+      {/* Add/Edit Article Modal */}
+      <AddArticleModal
+        isOpen={isAddModalOpen}
+        onClose={() => {
+          setIsAddModalOpen(false)
+          setEditingArticle(null)
+        }}
+        onSubmit={editingArticle ? handleUpdateArticle : handleAddArticle}
+        loading={addLoading}
+        initialData={editingArticle}
+      />
 
       {/* Delete Confirm */}
       <ConfirmDialog
         isOpen={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
-        onConfirm={() => { setArticles((prev) => prev.filter((a) => a.id !== deleteTarget?.id)); setDeleteTarget(null); toast.success("تم حذف المقال بنجاح") }}
+        onConfirm={handleDeleteArticle}
         title="تأكيد الحذف"
         message={`هل أنت متأكد من حذف المقال "${deleteTarget?.title}"؟`}
         confirmLabel="نعم، احذف"
         variant="danger"
+        loading={deleteLoading}
       />
     </div>
   )
 }
 
-function AddArticleModal({ isOpen, onClose, onSubmit, loading }: { isOpen: boolean; onClose: () => void; onSubmit: (data: ArticlePayload) => void; loading: boolean }) {
-  const [form, setForm] = useState<ArticlePayload>({ title: "", description: "", content: "", category: "", imageUrl: "" })
+function AddArticleModal({
+  isOpen,
+  onClose,
+  onSubmit,
+  loading,
+  initialData,
+}: {
+  isOpen: boolean
+  onClose: () => void
+  onSubmit: (data: ArticlePayload) => void
+  loading: boolean
+  initialData?: Article | null
+}) {
+  const [form, setForm] = useState<ArticlePayload>({
+    title: "",
+    description: "",
+    content: "",
+    category: "",
+    imageUrl: "",
+  })
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  useEffect(() => { if (isOpen) { setForm({ title: "", description: "", content: "", category: "", imageUrl: "" }); setErrors({}) } }, [isOpen])
+  useEffect(() => {
+    if (isOpen) {
+      if (initialData) {
+        setForm({
+          title: initialData.title || "",
+          description: initialData.description || "",
+          content: initialData.content || "",
+          category: initialData.category || "",
+          imageUrl: initialData.imageUrl || "",
+        })
+      } else {
+        setForm({ title: "", description: "", content: "", category: "", imageUrl: "" })
+      }
+      setErrors({})
+    }
+  }, [isOpen, initialData])
 
   const validate = () => {
     const errs: Record<string, string> = {}
@@ -238,10 +328,22 @@ function AddArticleModal({ isOpen, onClose, onSubmit, loading }: { isOpen: boole
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 p-4">
       <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-card shadow-xl">
         <div className="relative border-b border-border px-6 py-5 text-center">
-          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10"><FileText className="h-7 w-7 text-primary" /></div>
-          <h2 className="text-xl font-bold text-foreground">انشاء مقال جديد</h2>
-          <p className="mt-1 text-sm text-muted-foreground">قم بإدخال بيانات المحتوى لإضافته إلى النظام</p>
-          <button onClick={onClose} className="absolute start-4 top-4 rounded-lg p-1 text-muted-foreground hover:bg-muted" aria-label="إغلاق"><X className="h-5 w-5" /></button>
+          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10">
+            <FileText className="h-7 w-7 text-primary" />
+          </div>
+          <h2 className="text-xl font-bold text-foreground">
+            {initialData ? "تعديل المقال" : "انشاء مقال جديد"}
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {initialData ? "قم بتعديل بيانات المقال" : "قم بإدخال بيانات المحتوى لإضافته إلى النظام"}
+          </p>
+          <button
+            onClick={onClose}
+            className="absolute start-4 top-4 rounded-lg p-1 text-muted-foreground hover:bg-muted"
+            aria-label="إغلاق"
+          >
+            <X className="h-5 w-5" />
+          </button>
         </div>
         <div className="space-y-4 px-6 py-5">
           <div>
@@ -272,10 +374,26 @@ function AddArticleModal({ isOpen, onClose, onSubmit, loading }: { isOpen: boole
           </div>
         </div>
         <div className="flex items-center justify-center gap-3 border-t border-border px-6 py-4">
-          <button onClick={() => { if (validate()) onSubmit(form) }} disabled={loading} className="flex items-center gap-2 rounded-xl bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50">
-            {loading ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" /> : <CheckCircle className="h-4 w-4" />}إضافة
+          <button
+            onClick={() => {
+              if (validate()) onSubmit(form)
+            }}
+            disabled={loading}
+            className="flex items-center gap-2 rounded-xl bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
+          >
+            {loading ? (
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+            ) : (
+              <CheckCircle className="h-4 w-4" />
+            )}
+            {initialData ? "حفظ التغييرات" : "إضافة"}
           </button>
-          <button onClick={onClose} className="rounded-xl border border-border px-6 py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors">إلغاء</button>
+          <button
+            onClick={onClose}
+            className="rounded-xl border border-border px-6 py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+          >
+            إلغاء
+          </button>
         </div>
       </div>
     </div>

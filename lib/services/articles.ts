@@ -11,4 +11,10 @@ export const articlesService = {
 
   create: (data: CreateArticleDto) =>
     apiClient<Article>("/articles", { method: "POST", body: data }),
+
+  update: (id: string | number, data: Partial<CreateArticleDto>) =>
+    apiClient<Article>(`/articles/${id}`, { method: "PUT", body: data }),
+
+  delete: (id: string | number) =>
+    apiClient(`/articles/${id}`, { method: "DELETE" }),
 }
