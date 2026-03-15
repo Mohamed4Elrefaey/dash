@@ -17,6 +17,7 @@ export default function DoctorsPage() {
   const [addLoading, setAddLoading] = useState(false)
   const [viewingDoctor, setViewingDoctor] = useState<Doctor | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Doctor | null>(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
 
   useEffect(() => {
     fetchDoctors()
@@ -31,6 +32,21 @@ export default function DoctorsPage() {
       toast.error("تعذر تحميل بيانات الأطباء")
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleDeleteDoctor() {
+    if (!deleteTarget) return
+    setDeleteLoading(true)
+    try {
+      await doctorsRepository.deleteDoctor(deleteTarget.id)
+      toast.success("تم حذف الطبيب بنجاح")
+      setDeleteTarget(null)
+      fetchDoctors()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "تعذر حذف الطبيب")
+    } finally {
+      setDeleteLoading(false)
     }
   }
 
@@ -164,11 +180,12 @@ export default function DoctorsPage() {
       <ConfirmDialog
         isOpen={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
-        onConfirm={() => { setDoctors((prev) => prev.filter((d) => d.id !== deleteTarget?.id)); setDeleteTarget(null); toast.success("تم حذف الطبيب بنجاح") }}
+        onConfirm={handleDeleteDoctor}
         title="تأكيد الحذف"
-        message={`هل أنت متأكد من حذف الطبيب "${deleteTarget?.name}"؟`}
+        message={`هل أنت متأكد من حذف الطبيب "${deleteTarget?.name}"؟ سوف يتم حذف بيانات الطبيب بشكل نهائي من النظام.`}
         confirmLabel="نعم، احذف"
         variant="danger"
+        loading={deleteLoading}
       />
     </div>
   )

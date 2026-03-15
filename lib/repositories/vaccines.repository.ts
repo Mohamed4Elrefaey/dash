@@ -15,5 +15,10 @@ export const vaccinesRepository = {
 
   createVaccine: (data: CreateVaccineDto) => vaccinesService.create(data),
 
+  updateVaccine: (id: string | number, data: Partial<CreateVaccineDto>) =>
+    vaccinesService.update(id, data),
+
+  deleteVaccine: (id: string | number) => vaccinesService.delete(id),
+
   seedVaccines: () => vaccinesService.seed(),
 }

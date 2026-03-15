@@ -11,4 +11,6 @@ export const doctorsRepository = {
 
   getNearbyDoctors: (lat: number, lng: number, dist?: number) =>
     doctorsService.getNearby(lat, lng, dist),
+
+  deleteDoctor: (id: string | number) => doctorsService.delete(id),
 }

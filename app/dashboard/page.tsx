@@ -5,7 +5,6 @@ import {
   AlertTriangle,
   CheckCircle,
   FileText,
-  ArrowLeft,
   TriangleAlert,
   ClipboardList,
 } from "lucide-react"
@@ -117,7 +116,6 @@ function AlertsSection() {
         <h2 className="text-lg font-bold text-foreground">التنبيهات الهامة</h2>
         <button className="flex items-center gap-1 text-sm text-primary hover:underline">
           عرض الكل
-          <ArrowLeft className="h-4 w-4" />
         </button>
       </div>
       <div className="space-y-3">
@@ -150,7 +148,6 @@ function ActivitiesSection() {
         <h2 className="text-lg font-bold text-foreground">اخر الانشطة</h2>
         <button className="flex items-center gap-1 text-sm text-primary hover:underline">
           عرض الكل
-          <ArrowLeft className="h-4 w-4" />
         </button>
       </div>
       <div className="space-y-3">

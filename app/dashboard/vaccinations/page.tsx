@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useEffect } from "react"
 import { Plus, Pencil, Trash2, Syringe, CheckCircle, AlertTriangle } from "lucide-react"
-import { type Vaccine } from "@/lib/models/vaccine.model"
+import { type Vaccine, type CreateVaccineDto } from "@/lib/models/vaccine.model"
 import { vaccinesRepository } from "@/lib/repositories/vaccines.repository"
 import { adminRepository } from "@/lib/repositories/admin.repository"
 import { LoadingSpinner } from "@/components/dashboard/loading-spinner"
@@ -59,17 +59,34 @@ export default function VaccinationsPage() {
     }
   }
 
-  const handleEdit = async (data: Partial<Vaccine>) => {
-    // Note: The provided Swagger doesn't have a PUT /vaccines/{id} endpoint,
-    // so we'll just show a message or use POST if the backend supports it as upsert.
-    toast.info("تحديث التطعيم غير متاح حالياً في النظام")
-    setIsModalOpen(false)
+  const handleEdit = async (data: CreateVaccineDto) => {
+    if (!editingVaccination) return
+    setAddLoading(true)
+    try {
+      await vaccinesRepository.updateVaccine(editingVaccination.id, data)
+      setIsModalOpen(false)
+      toast.success("تم تحديث التطعيم بنجاح")
+      fetchData()
+    } catch (err: any) {
+      toast.error(err.message || "تعذر تحديث التطعيم")
+    } finally {
+      setAddLoading(false)
+    }
   }
 
   const handleDelete = async () => {
-    // Note: The provided Swagger doesn't have a DELETE /vaccines/{id} endpoint.
-    toast.info("حذف التطعيم غير متاح حالياً في النظام")
-    setDeleteTarget(null)
+    if (!deleteTarget) return
+    setDeleteLoading(true)
+    try {
+      await vaccinesRepository.deleteVaccine(deleteTarget.id)
+      setDeleteTarget(null)
+      toast.success("تم حذف التطعيم بنجاح")
+      fetchData()
+    } catch (err: any) {
+      toast.error(err.message || "تعذر حذف التطعيم")
+    } finally {
+      setDeleteLoading(false)
+    }
   }
 
   const openAddModal = () => {
