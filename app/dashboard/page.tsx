@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import {
   Users,
   AlertTriangle,
@@ -11,14 +12,9 @@ import {
 } from "lucide-react"
 import { StatCard } from "@/components/dashboard/stat-card"
 import { DashboardChart } from "@/components/dashboard/dashboard-chart"
-
-// Mock data as per requirements
-const STATIC_STATS = {
-  totalChildren: 13500,
-  complianceRate: 94,
-  lateVaccinations: 347,
-  activeRecordsToday: 156,
-}
+import { adminRepository } from "@/lib/repositories/admin.repository"
+import { AdminStats } from "@/lib/models/admin.model"
+import { toast } from "sonner"
 
 const STATIC_ACTIVITIES = [
   {
@@ -54,6 +50,24 @@ const STATIC_ALERTS = [
 ]
 
 export default function DashboardPage() {
+  const [stats, setStats] = useState<AdminStats | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        setLoading(true)
+        const data = await adminRepository.getDashboardStats()
+        setStats(data)
+      } catch {
+        toast.error("تعذر تحميل إحصائيات لوحة التحكم")
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchStats()
+  }, [])
+
   return (
     <div>
       {/* Header */}
@@ -68,30 +82,42 @@ export default function DashboardPage() {
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="إجمالي الأطفال المسجلين"
-          value={STATIC_STATS.totalChildren.toLocaleString("ar-EG")}
+          value={
+            loading
+              ? "..."
+              : stats?.totalChildren?.toLocaleString("ar-EG") ?? "---"
+          }
           icon={Users}
-          trend={{ value: "١٢.٥%", positive: true }}
+          trend={stats ? { value: "١٢.٥%", positive: true } : undefined}
           iconBgColor="bg-[#e8f5f1]"
         />
         <StatCard
           title="معدل الالتزام بالتطعيمات"
-          value={`${STATIC_STATS.complianceRate}%`}
+          value={loading ? "..." : stats ? `${stats.complianceRate}%` : "---"}
           icon={CheckCircle}
-          trend={{ value: "١٢.٥%", positive: true }}
+          trend={stats ? { value: "١٢.٥%", positive: true } : undefined}
           iconBgColor="bg-[#e8f5f1]"
         />
         <StatCard
           title="تطعيمات متاخرة"
-          value={STATIC_STATS.lateVaccinations.toLocaleString("ar-EG")}
+          value={
+            loading
+              ? "..."
+              : stats?.lateVaccinations?.toLocaleString("ar-EG") ?? "---"
+          }
           icon={AlertTriangle}
-          trend={{ value: "٨.١%", positive: false }}
+          trend={stats ? { value: "٨.١%", positive: false } : undefined}
           iconBgColor="bg-destructive/10"
         />
         <StatCard
           title="السجلات النشطة اليوم"
-          value={STATIC_STATS.activeRecordsToday.toLocaleString("ar-EG")}
+          value={
+            loading
+              ? "..."
+              : stats?.activeRecordsToday?.toLocaleString("ar-EG") ?? "---"
+          }
           icon={FileText}
-          trend={{ value: "١٢.٥%", positive: true }}
+          trend={stats ? { value: "١٢.٥%", positive: true } : undefined}
           iconBgColor="bg-[#e8f5f1]"
         />
       </div>

@@ -1,8 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Plus, Search, FileText, Eye, Pencil, Trash2, X, CheckCircle } from "lucide-react"
+import { Plus, Search, FileText, Eye, Pencil, Trash2, X, CheckCircle, MessageSquare } from "lucide-react"
 import { articlesRepository } from "@/lib/repositories/articles.repository"
+import { postsRepository } from "@/lib/repositories/posts.repository"
+import { Post, CreatePostDto } from "@/lib/services/posts"
 import { type Article, type CreateArticleDto as ArticlePayload } from "@/lib/models/article.model"
 import { LoadingSpinner } from "@/components/dashboard/loading-spinner"
 import { ConfirmDialog } from "@/components/dashboard/confirm-dialog"
@@ -20,19 +22,29 @@ const statuses = ["الكل", "منشور", "مسودة", "قيد المراجع
 
 export default function ContentPage() {
   const [articles, setArticles] = useState<Article[]>([])
+  const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
+  const [postsLoading, setPostsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState("articles")
   const [searchQuery, setSearchQuery] = useState("")
   const [activeStatus, setActiveStatus] = useState("الكل")
   const [activeCategory, setActiveCategory] = useState("الكل")
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [isPostModalOpen, setIsPostModalOpen] = useState(false)
   const [editingArticle, setEditingArticle] = useState<Article | null>(null)
   const [addLoading, setAddLoading] = useState(false)
+  const [postAddLoading, setPostAddLoading] = useState(false)
   const [viewingArticle, setViewingArticle] = useState<Article | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Article | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
 
-  useEffect(() => { fetchArticles() }, [])
+  useEffect(() => {
+    if (activeTab === "articles") {
+      fetchArticles()
+    } else if (activeTab === "community") {
+      fetchPosts()
+    }
+  }, [activeTab])
 
   async function fetchArticles() {
     try {
@@ -43,6 +55,32 @@ export default function ContentPage() {
       toast.error("تعذر تحميل المقالات")
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function fetchPosts() {
+    try {
+      setPostsLoading(true)
+      const data = await postsRepository.getPosts()
+      setPosts(data)
+    } catch {
+      toast.error("تعذر تحميل منشورات المجتمع")
+    } finally {
+      setPostsLoading(false)
+    }
+  }
+
+  async function handleAddPost(data: CreatePostDto) {
+    setPostAddLoading(true)
+    try {
+      await postsRepository.createPost(data)
+      toast.success("تم إضافة المنشور بنجاح")
+      setIsPostModalOpen(false)
+      fetchPosts()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "تعذر إضافة المنشور")
+    } finally {
+      setPostAddLoading(false)
     }
   }
 
@@ -211,9 +249,52 @@ export default function ContentPage() {
       )}
 
       {activeTab === "community" && (
-        <div className="flex h-48 items-center justify-center rounded-xl border border-border bg-card">
-          <p className="text-muted-foreground">منشورات المجتمع - قريباً</p>
-        </div>
+        <>
+          <div className="mb-4 flex items-center justify-between">
+            <button
+              onClick={() => setIsPostModalOpen(true)}
+              className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
+            >
+              <Plus className="h-4 w-4" />انشاء منشور جديد
+            </button>
+          </div>
+
+          {postsLoading ? (
+            <div className="flex h-48 items-center justify-center rounded-xl border border-border bg-card">
+              <LoadingSpinner message="جارٍ تحميل المنشورات..." />
+            </div>
+          ) : posts.length === 0 ? (
+            <div className="flex h-48 items-center justify-center rounded-xl border border-border bg-card">
+              <p className="text-muted-foreground">لا توجد منشورات متاحة</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {posts.map((post) => (
+                <div key={post.id} className="overflow-hidden rounded-xl border border-border bg-card">
+                  <div className="h-40 bg-muted">
+                    {post.imageUrl ? (
+                      <img src={post.imageUrl} alt={post.title} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full items-center justify-center">
+                        <MessageSquare className="h-12 w-12 text-muted-foreground/30" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-4">
+                    <h3 className="mb-2 font-bold text-foreground line-clamp-1">{post.title}</h3>
+                    <p className="mb-4 text-sm leading-relaxed text-muted-foreground line-clamp-3">
+                      {post.content}
+                    </p>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      {post.author && <span>{post.author}</span>}
+                      {post.createdAt && <span>{post.createdAt}</span>}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {activeTab === "sounds" && (
@@ -269,6 +350,133 @@ export default function ContentPage() {
         variant="danger"
         loading={deleteLoading}
       />
+
+      {/* Add Post Modal */}
+      <AddPostModal
+        isOpen={isPostModalOpen}
+        onClose={() => setIsPostModalOpen(false)}
+        onSubmit={handleAddPost}
+        loading={postAddLoading}
+      />
+    </div>
+  )
+}
+
+function AddPostModal({
+  isOpen,
+  onClose,
+  onSubmit,
+  loading,
+}: {
+  isOpen: boolean
+  onClose: () => void
+  onSubmit: (data: CreatePostDto) => void
+  loading: boolean
+}) {
+  const [form, setForm] = useState<CreatePostDto>({ title: "", content: "", imageUrl: "" })
+  const [errors, setErrors] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    if (isOpen) {
+      setForm({ title: "", content: "", imageUrl: "" })
+      setErrors({})
+    }
+  }, [isOpen])
+
+  const validate = () => {
+    const errs: Record<string, string> = {}
+    if (!form.title.trim()) errs.title = "عنوان المنشور مطلوب"
+    if (!form.content.trim()) errs.content = "محتوى المنشور مطلوب"
+    setErrors(errs)
+    return Object.keys(errs).length === 0
+  }
+
+  if (!isOpen) return null
+  const inputClass = (field: string) =>
+    `w-full rounded-lg border px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 ${
+      errors[field]
+        ? "border-destructive bg-destructive/5 focus:border-destructive focus:ring-destructive"
+        : "border-border bg-card focus:border-primary focus:ring-primary"
+    }`
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 p-4 text-start">
+      <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-card shadow-xl" dir="rtl">
+        <div className="relative border-b border-border px-6 py-5 text-center">
+          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10">
+            <MessageSquare className="h-7 w-7 text-primary" />
+          </div>
+          <h2 className="text-xl font-bold text-foreground">انشاء منشور جديد</h2>
+          <p className="mt-1 text-sm text-muted-foreground">شارك تجربتك مع المجتمع</p>
+          <button
+            onClick={onClose}
+            className="absolute start-4 top-4 rounded-lg p-1 text-muted-foreground hover:bg-muted"
+            aria-label="إغلاق"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="space-y-4 px-6 py-5">
+          <div>
+            <label className="mb-2 block text-sm font-semibold text-foreground">
+              عنوان المنشور <span className="text-destructive">*</span>
+            </label>
+            <input
+              type="text"
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              className={inputClass("title")}
+              placeholder="ادخل عنوان المنشور"
+            />
+            {errors.title && <p className="mt-1 text-xs text-destructive">{errors.title}</p>}
+          </div>
+          <div>
+            <label className="mb-2 block text-sm font-semibold text-foreground">
+              محتوى المنشور <span className="text-destructive">*</span>
+            </label>
+            <textarea
+              value={form.content}
+              onChange={(e) => setForm({ ...form, content: e.target.value })}
+              rows={5}
+              className={`${inputClass("content")} resize-none`}
+              placeholder="ماذا تريد ان تشارك؟"
+            />
+            {errors.content && <p className="mt-1 text-xs text-destructive">{errors.content}</p>}
+          </div>
+          <div>
+            <label className="mb-2 block text-sm font-semibold text-foreground">رابط الصورة</label>
+            <input
+              type="url"
+              value={form.imageUrl}
+              onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
+              className={inputClass("")}
+              placeholder="https://..."
+            />
+          </div>
+        </div>
+        <div className="flex items-center justify-center gap-3 border-t border-border px-6 py-4">
+          <button
+            onClick={() => {
+              if (validate()) onSubmit(form)
+            }}
+            disabled={loading}
+            className="flex items-center gap-2 rounded-xl bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
+          >
+            {loading ? (
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+            ) : (
+              <CheckCircle className="h-4 w-4" />
+            )}
+            إضافة المنشور
+          </button>
+          <button
+            onClick={onClose}
+            className="rounded-xl border border-border px-6 py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+          >
+            إلغاء
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
