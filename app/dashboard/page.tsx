@@ -9,11 +9,12 @@ import {
   ArrowLeft,
   TriangleAlert,
   ClipboardList,
+  MessageSquare,
 } from "lucide-react"
 import { StatCard } from "@/components/dashboard/stat-card"
 import { DashboardChart } from "@/components/dashboard/dashboard-chart"
-import { adminRepository } from "@/lib/repositories/admin.repository"
-import { AdminStats } from "@/lib/models/admin.model"
+import { childrenRepository } from "@/lib/repositories/children.repository"
+import { postsRepository } from "@/lib/repositories/posts.repository"
 import { toast } from "sonner"
 
 const STATIC_ACTIVITIES = [
@@ -50,22 +51,28 @@ const STATIC_ALERTS = [
 ]
 
 export default function DashboardPage() {
-  const [stats, setStats] = useState<AdminStats | null>(null)
+  const [totalChildren, setTotalChildren] = useState<number | null>(null)
+  const [totalPosts, setTotalPosts] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    async function fetchStats() {
+    async function fetchData() {
       try {
         setLoading(true)
-        const data = await adminRepository.getDashboardStats()
-        setStats(data)
-      } catch {
-        toast.error("تعذر تحميل إحصائيات لوحة التحكم")
+        const [children, postsRes] = await Promise.all([
+          childrenRepository.getChildren(),
+          postsRepository.getPostsWithMeta(1, 1)
+        ])
+        setTotalChildren(children.length)
+        setTotalPosts(postsRes.meta?.totalDocs || postsRes.data.length)
+      } catch (err) {
+        console.error("Dashboard data fetch error:", err)
+        toast.error("تعذر تحميل بيانات لوحة التحكم")
       } finally {
         setLoading(false)
       }
     }
-    fetchStats()
+    fetchData()
   }, [])
 
   return (
@@ -79,45 +86,48 @@ export default function DashboardPage() {
       </div>
 
       {/* Stat Cards */}
-      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
         <StatCard
           title="إجمالي الأطفال المسجلين"
           value={
             loading
               ? "..."
-              : stats?.totalChildren?.toLocaleString("ar-EG") ?? "---"
+              : totalChildren?.toLocaleString("ar-EG") ?? "---"
           }
           icon={Users}
-          trend={stats ? { value: "١٢.٥%", positive: true } : undefined}
+          trend={{ value: "١٢.٥%", positive: true }}
           iconBgColor="bg-[#e8f5f1]"
         />
         <StatCard
           title="معدل الالتزام بالتطعيمات"
-          value={loading ? "..." : stats ? `${stats.complianceRate}%` : "---"}
+          value="٧٦%"
           icon={CheckCircle}
-          trend={stats ? { value: "١٢.٥%", positive: true } : undefined}
+          trend={{ value: "١٢.٥%", positive: true }}
           iconBgColor="bg-[#e8f5f1]"
         />
         <StatCard
           title="تطعيمات متاخرة"
-          value={
-            loading
-              ? "..."
-              : stats?.lateVaccinations?.toLocaleString("ar-EG") ?? "---"
-          }
+          value="١,٢٥٠"
           icon={AlertTriangle}
-          trend={stats ? { value: "٨.١%", positive: false } : undefined}
+          trend={{ value: "٨.١%", positive: false }}
           iconBgColor="bg-destructive/10"
         />
         <StatCard
           title="السجلات النشطة اليوم"
+          value="٤٢"
+          icon={FileText}
+          trend={{ value: "١٢.٥%", positive: true }}
+          iconBgColor="bg-[#e8f5f1]"
+        />
+        <StatCard
+          title="إجمالي المنشورات"
           value={
             loading
               ? "..."
-              : stats?.activeRecordsToday?.toLocaleString("ar-EG") ?? "---"
+              : totalPosts?.toLocaleString("ar-EG") ?? "---"
           }
-          icon={FileText}
-          trend={stats ? { value: "١٢.٥%", positive: true } : undefined}
+          icon={MessageSquare}
+          trend={{ value: "٥.٢%", positive: true }}
           iconBgColor="bg-[#e8f5f1]"
         />
       </div>

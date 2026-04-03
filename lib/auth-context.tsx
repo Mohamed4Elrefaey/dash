@@ -2,8 +2,9 @@
 
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
-import { getToken, getStoredUser, removeToken } from "@/lib/api-client"
+import { getToken, getStoredUser } from "@/lib/api-client"
 import { authRepository } from "@/lib/repositories/auth.repository"
+import { authService } from "@/lib/services/auth"
 import { type User } from "@/lib/models/auth.model"
 
 interface AuthContextType {

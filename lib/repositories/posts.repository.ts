@@ -6,5 +6,7 @@ export const postsRepository = {
     return response.data
   },
 
+  getPostsWithMeta: (page?: number, limit?: number) => postsService.getAll(page, limit),
+
   createPost: (data: CreatePostDto) => postsService.create(data),
 }

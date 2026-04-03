@@ -1,6 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/lib/auth-context"
 import {
   Plus,
   Search,
@@ -59,10 +61,22 @@ const mockStaff: StaffMember[] = [
 ]
 
 export default function StaffPage() {
+  const { user, isLoading } = useAuth()
+  const router = useRouter()
   const [staff, setStaff] = useState<StaffMember[]>(mockStaff)
   const [searchQuery, setSearchQuery] = useState("")
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<StaffMember | null>(null)
+
+  useEffect(() => {
+    if (!isLoading && user && user.role !== "super_admin") {
+      router.push("/dashboard")
+    }
+  }, [user, isLoading, router])
+
+  if (isLoading || (user && user.role !== "super_admin")) {
+    return null
+  }
 
   const filteredStaff = staff.filter(
     (s) => s.name.includes(searchQuery) || s.email.includes(searchQuery),
