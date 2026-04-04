@@ -31,7 +31,7 @@ const systemMenuItems = [
 ]
 
 const reportsMenuItems = [
-  { label: "ادارة الموظفين", href: "/dashboard/staff", icon: Users, role: "super_admin" },
+  { label: "ادارة الموظفين", href: "/dashboard/staff", icon: Users, roles: ["super_admin"] },
   { label: "التقارير و التحليلات", href: "/dashboard/reports", icon: BarChart3 },
   { label: "اعدادات النظام", href: "/dashboard/settings", icon: Settings },
 ]
@@ -49,8 +49,8 @@ export function AppSidebar({ onLogout }: AppSidebarProps) {
     return pathname.startsWith(href)
   }
 
-  const renderItem = (item: { label: string; href: string; icon: React.ElementType; role?: string }) => {
-    if (item.role && user?.role !== item.role) return null
+  const renderItem = (item: { label: string; href: string; icon: React.ElementType; roles?: string[] }) => {
+    if (item.roles && (!user?.role || !item.roles.includes(user.role))) return null
 
     const Icon = item.icon
     const active = isActive(item.href)

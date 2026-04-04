@@ -9,4 +9,6 @@ export const postsRepository = {
   getPostsWithMeta: (page?: number, limit?: number) => postsService.getAll(page, limit),
 
   createPost: (data: CreatePostDto) => postsService.create(data),
+
+  deletePost: (id: string | number) => postsService.delete(id),
 }

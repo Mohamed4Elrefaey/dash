@@ -10,11 +10,14 @@ import {
   TriangleAlert,
   ClipboardList,
   MessageSquare,
+  Pill,
 } from "lucide-react"
+import Link from "next/link"
 import { StatCard } from "@/components/dashboard/stat-card"
 import { DashboardChart } from "@/components/dashboard/dashboard-chart"
 import { childrenRepository } from "@/lib/repositories/children.repository"
 import { postsRepository } from "@/lib/repositories/posts.repository"
+import { medicinesRepository } from "@/lib/repositories/medicines.repository"
 import { toast } from "sonner"
 
 const STATIC_ACTIVITIES = [
@@ -50,21 +53,28 @@ const STATIC_ALERTS = [
   },
 ]
 
+import { type Medicine } from "@/lib/models/medicine.model"
+
 export default function DashboardPage() {
   const [totalChildren, setTotalChildren] = useState<number | null>(null)
   const [totalPosts, setTotalPosts] = useState<number | null>(null)
+  const [totalMedicines, setTotalMedicines] = useState<number | null>(null)
+  const [latestMedicines, setLatestMedicines] = useState<Medicine[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function fetchData() {
       try {
         setLoading(true)
-        const [children, postsRes] = await Promise.all([
+        const [children, postsRes, medicines] = await Promise.all([
           childrenRepository.getChildren(),
-          postsRepository.getPostsWithMeta(1, 1)
+          postsRepository.getPostsWithMeta(1, 1),
+          medicinesRepository.getMedicines()
         ])
         setTotalChildren(children.length)
         setTotalPosts(postsRes.meta?.totalDocs || postsRes.data.length)
+        setTotalMedicines(medicines.length)
+        setLatestMedicines(medicines.slice(0, 4))
       } catch (err) {
         console.error("Dashboard data fetch error:", err)
         toast.error("تعذر تحميل بيانات لوحة التحكم")
@@ -86,7 +96,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stat Cards */}
-      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <StatCard
           title="إجمالي الأطفال المسجلين"
           value={
@@ -113,10 +123,14 @@ export default function DashboardPage() {
           iconBgColor="bg-destructive/10"
         />
         <StatCard
-          title="السجلات النشطة اليوم"
-          value="٤٢"
-          icon={FileText}
-          trend={{ value: "١٢.٥%", positive: true }}
+          title="إجمالي الأدوية"
+          value={
+            loading
+              ? "..."
+              : totalMedicines?.toLocaleString("ar-EG") ?? "---"
+          }
+          icon={Pill}
+          trend={{ value: "٣.١%", positive: true }}
           iconBgColor="bg-[#e8f5f1]"
         />
         <StatCard
@@ -130,6 +144,13 @@ export default function DashboardPage() {
           trend={{ value: "٥.٢%", positive: true }}
           iconBgColor="bg-[#e8f5f1]"
         />
+        <StatCard
+          title="السجلات النشطة اليوم"
+          value="٤٢"
+          icon={FileText}
+          trend={{ value: "١٢.٥%", positive: true }}
+          iconBgColor="bg-[#e8f5f1]"
+        />
       </div>
 
       {/* Chart */}
@@ -138,9 +159,39 @@ export default function DashboardPage() {
       </div>
 
       {/* Alerts & Activities */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <AlertsSection />
         <ActivitiesSection />
+      </div>
+
+      {/* Latest Medicines */}
+      <div className="mb-8">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-bold text-foreground">الأدوية المضافة حديثاً</h2>
+          <Link href="/dashboard/content" className="text-sm text-primary hover:underline">عرض الكل</Link>
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {latestMedicines.length === 0 ? (
+            <div className="col-span-full flex h-32 items-center justify-center rounded-xl border border-dashed border-border bg-card/50">
+              <p className="text-sm text-muted-foreground">لا توجد أدوية مضافة حالياً</p>
+            </div>
+          ) : (
+            latestMedicines.map((medicine) => (
+              <div key={medicine.id} className="rounded-xl border border-border bg-card p-4">
+                <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+                  <Pill className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="font-bold text-foreground line-clamp-1">{medicine.name}</h3>
+                <p className="mt-1 text-xs text-muted-foreground line-clamp-1">{medicine.category}</p>
+                <div className="mt-4">
+                  <Link href="/dashboard/content" className="inline-flex items-center text-xs font-medium text-primary hover:underline">
+                    تفاصيل الدواء
+                  </Link>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </div>
     </div>
   )

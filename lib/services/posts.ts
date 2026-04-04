@@ -23,4 +23,7 @@ export const postsService = {
 
   create: (data: CreatePostDto) =>
     apiClient<Post>("/posts", { method: "POST", body: data }),
+
+  delete: (id: string | number) =>
+    apiClient<void>(`/posts/${id}`, { method: "DELETE" }),
 }
