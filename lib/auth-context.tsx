@@ -28,7 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (token && storedUser) {
       setUser({
         ...storedUser,
-        role: storedUser.role.toLowerCase(),
+        role: storedUser.role?.toLowerCase() || "staff",
       })
     }
     setIsLoading(false)
@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await authRepository.login({ email, password })
       const userData: User = {
         ...response.user,
-        role: response.user.role.toLowerCase(),
+        role: response.user.role?.toLowerCase() || "staff",
       }
       setUser(userData)
       router.push("/dashboard")

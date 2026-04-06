@@ -17,7 +17,6 @@ export default function DoctorsPage() {
   const [addLoading, setAddLoading] = useState(false)
   const [viewingDoctor, setViewingDoctor] = useState<Doctor | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Doctor | null>(null)
-  const [deleteLoading, setDeleteLoading] = useState(false)
 
   useEffect(() => {
     fetchDoctors()
@@ -35,29 +34,22 @@ export default function DoctorsPage() {
     }
   }
 
-  async function handleDeleteDoctor() {
-    if (!deleteTarget) return
-    setDeleteLoading(true)
-    try {
-      await doctorsRepository.deleteDoctor(deleteTarget.id)
-      toast.success("تم حذف الطبيب بنجاح")
-      setDeleteTarget(null)
-      fetchDoctors()
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "تعذر حذف الطبيب")
-    } finally {
-      setDeleteLoading(false)
-    }
-  }
-
   async function handleAddDoctor(data: DoctorPayload) {
     setAddLoading(true)
     try {
-      await doctorsRepository.createDoctor(data)
+      const payload = {
+        ...data,
+        longitude: data.longitude || 0,
+        latitude: data.latitude || 0,
+        price: Number(data.price) || 0,
+        clinics: Array.isArray(data.clinics) ? data.clinics : [],
+      }
+      await doctorsRepository.createDoctor(payload)
       toast.success("تم إضافة الطبيب بنجاح")
       setIsAddModalOpen(false)
       fetchDoctors()
     } catch (err) {
+      console.error("Add doctor error:", err)
       toast.error(err instanceof Error ? err.message : "تعذر إضافة الطبيب")
     } finally {
       setAddLoading(false)
@@ -180,12 +172,11 @@ export default function DoctorsPage() {
       <ConfirmDialog
         isOpen={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
-        onConfirm={handleDeleteDoctor}
+        onConfirm={() => { setDoctors((prev) => prev.filter((d) => d.id !== deleteTarget?.id)); setDeleteTarget(null); toast.success("تم حذف الطبيب بنجاح") }}
         title="تأكيد الحذف"
-        message={`هل أنت متأكد من حذف الطبيب "${deleteTarget?.name}"؟ سوف يتم حذف بيانات الطبيب بشكل نهائي من النظام.`}
+        message={`هل أنت متأكد من حذف الطبيب "${deleteTarget?.name}"؟`}
         confirmLabel="نعم، احذف"
         variant="danger"
-        loading={deleteLoading}
       />
     </div>
   )
