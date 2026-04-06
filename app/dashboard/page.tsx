@@ -55,26 +55,32 @@ const STATIC_ALERTS = [
 
 import { type Medicine } from "@/lib/models/medicine.model"
 
+import { adminRepository } from "@/lib/repositories/admin.repository"
+import { type AdminStats } from "@/lib/models/admin.model"
+
 export default function DashboardPage() {
   const [totalChildren, setTotalChildren] = useState<number | null>(null)
   const [totalPosts, setTotalPosts] = useState<number | null>(null)
   const [totalMedicines, setTotalMedicines] = useState<number | null>(null)
   const [latestMedicines, setLatestMedicines] = useState<Medicine[]>([])
+  const [stats, setStats] = useState<AdminStats | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function fetchData() {
       try {
         setLoading(true)
-        const [children, postsRes, medicines] = await Promise.all([
+        const [children, postsRes, medicines, adminStats] = await Promise.all([
           childrenRepository.getChildren(),
           postsRepository.getPostsWithMeta(1, 1),
-          medicinesRepository.getMedicines()
+          medicinesRepository.getMedicines(),
+          adminRepository.getDashboardStats()
         ])
         setTotalChildren(children.length)
         setTotalPosts(postsRes.meta?.totalDocs || postsRes.data.length)
         setTotalMedicines(medicines.length)
         setLatestMedicines(medicines.slice(0, 4))
+        setStats(adminStats)
       } catch (err) {
         console.error("Dashboard data fetch error:", err)
         toast.error("تعذر تحميل بيانات لوحة التحكم")
@@ -110,14 +116,14 @@ export default function DashboardPage() {
         />
         <StatCard
           title="معدل الالتزام بالتطعيمات"
-          value="٧٦%"
+          value={loading ? "..." : stats?.complianceRate ? `${stats.complianceRate}%` : "٧٦%"}
           icon={CheckCircle}
           trend={{ value: "١٢.٥%", positive: true }}
           iconBgColor="bg-[#e8f5f1]"
         />
         <StatCard
           title="تطعيمات متاخرة"
-          value="١,٢٥٠"
+          value={loading ? "..." : stats?.lateVaccinations?.toLocaleString("ar-EG") ?? "١,٢٥٠"}
           icon={AlertTriangle}
           trend={{ value: "٨.١%", positive: false }}
           iconBgColor="bg-destructive/10"
@@ -155,7 +161,7 @@ export default function DashboardPage() {
 
       {/* Chart */}
       <div className="mb-8">
-        <DashboardChart isStatic />
+        <DashboardChart isStatic={false} />
       </div>
 
       {/* Alerts & Activities */}

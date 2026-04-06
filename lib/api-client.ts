@@ -81,23 +81,29 @@ export async function apiClient<T>(
 
   let res: Response
 
+  if (process.env.NODE_ENV === "development") {
+    console.log(`🚀 Request: ${method} ${endpoint}`, body)
+  }
+
   try {
     res = await fetch(`${BASE_URL}${endpoint}`, config)
-  } catch {
-    // ⛔ network / CORS / server down
+  } catch (err) {
+    console.error(`❌ Network Error: ${method} ${endpoint}`, err)
     throw new ApiError("تعذر الاتصال بالخادم، تحقق من الإنترنت", 0)
   }
 
   // 🔐 Unauthorized
   if (res.status === 401) {
-    removeToken()
+    // Only redirect if NOT on login page
     if (typeof window !== "undefined" && window.location.pathname !== "/") {
+      removeToken()
       window.location.href = "/"
+      throw new ApiError(
+        "انتهت صلاحية الجلسة، يرجى تسجيل الدخول مرة أخرى",
+        401
+      )
     }
-    throw new ApiError(
-      "انتهت صلاحية الجلسة، يرجى تسجيل الدخول مرة أخرى",
-      401
-    )
+    // If on login page, let it pass to handle "Invalid credentials"
   }
 
   // ❌ Other errors
@@ -106,6 +112,10 @@ export async function apiClient<T>(
     try {
       errorData = await res.json()
     } catch {}
+
+    if (process.env.NODE_ENV === "development") {
+      console.error(`❌ API Error: ${method} ${endpoint} (${res.status})`, errorData)
+    }
 
     let message = errorData.message || errorData.error
 
@@ -124,6 +134,11 @@ export async function apiClient<T>(
 
   // ✅ Success (handle empty response)
   const text = await res.text()
+
+  if (process.env.NODE_ENV === "development") {
+    console.log(`✅ Response: ${method} ${endpoint}`, text ? JSON.parse(text) : "Empty")
+  }
+
   if (!text) return {} as T
   return JSON.parse(text) as T
 }

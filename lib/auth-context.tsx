@@ -26,7 +26,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const token = getToken()
     const storedUser = getStoredUser()
     if (token && storedUser) {
-      setUser(storedUser)
+      setUser({
+        ...storedUser,
+        role: storedUser.role.toLowerCase(),
+      })
     }
     setIsLoading(false)
   }, [])
@@ -34,7 +37,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(
     async (email: string, password: string) => {
       const response = await authRepository.login({ email, password })
-      const userData: User = response.user
+      const userData: User = {
+        ...response.user,
+        role: response.user.role.toLowerCase(),
+      }
       setUser(userData)
       router.push("/dashboard")
     },

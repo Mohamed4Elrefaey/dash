@@ -52,10 +52,17 @@ export function AddVaccinationModal({
       return
     }
 
+    let ageInMonths = Number(targetAge) || 0
+    if (ageUnit === "سنوات") {
+      ageInMonths = ageInMonths * 12
+    } else if (ageUnit === "عند الولادة") {
+      ageInMonths = 0
+    }
+
     onSubmit({
       name,
       description: description || "---",
-      ageInMonths: Number(targetAge) || 0,
+      ageInMonths: ageInMonths,
       doseInfo: "جرعة واحدة",
       mandatory: publishStatus === "إلزامي",
     })
