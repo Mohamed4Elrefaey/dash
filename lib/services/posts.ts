@@ -24,6 +24,9 @@ export const postsService = {
   create: (data: CreatePostDto) =>
     apiClient<Post>("/posts", { method: "POST", body: data }),
 
+  update: (id: string | number, data: Partial<CreatePostDto>) =>
+    apiClient<Post>(`/posts/${id}`, { method: "PUT", body: data }),
+
   delete: (id: string | number) =>
     apiClient<void>(`/posts/${id}`, { method: "DELETE" }),
 }

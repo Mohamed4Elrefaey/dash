@@ -63,18 +63,40 @@ const mockStaff: StaffMember[] = [
 export default function StaffPage() {
   const { user, isLoading } = useAuth()
   const router = useRouter()
-  const [staff, setStaff] = useState<StaffMember[]>(mockStaff)
+  const [staff, setStaff] = useState<StaffMember[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<StaffMember | null>(null)
 
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    role: "مدير نظام",
+    phone: "",
+  })
+
   useEffect(() => {
-    if (!isLoading && user && user.role !== "super_admin") {
+    const savedStaff = localStorage.getItem("khatwa_employees")
+    if (savedStaff) {
+      setStaff(JSON.parse(savedStaff))
+    } else {
+      setStaff(mockStaff)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (staff.length > 0 || localStorage.getItem("khatwa_employees")) {
+      localStorage.setItem("khatwa_employees", JSON.stringify(staff))
+    }
+  }, [staff])
+
+  useEffect(() => {
+    if (!isLoading && user && user.role !== "admin") {
       router.push("/dashboard")
     }
   }, [user, isLoading, router])
 
-  if (isLoading || (user && user.role !== "super_admin")) {
+  if (isLoading || (user && user.role !== "admin")) {
     return null
   }
 
@@ -84,9 +106,32 @@ export default function StaffPage() {
 
   const handleDelete = () => {
     if (!deleteTarget) return
-    setStaff((prev) => prev.filter((s) => s.id !== deleteTarget.id))
+    const updated = staff.filter((s) => s.id !== deleteTarget.id)
+    setStaff(updated)
     setDeleteTarget(null)
     toast.success("تم حذف الموظف بنجاح")
+  }
+
+  const handleAddMember = () => {
+    if (!formData.name || !formData.email) {
+      toast.error("يرجى ملء البيانات المطلوبة")
+      return
+    }
+
+    const newMember: StaffMember = {
+      id: `s${Date.now()}`,
+      name: formData.name,
+      email: formData.email,
+      role: formData.role,
+      phone: formData.phone || "غير متوفر",
+      status: "نشط",
+      joinDate: new Date().toLocaleDateString("ar-EG"),
+    }
+
+    setStaff((prev) => [newMember, ...prev])
+    setIsAddModalOpen(false)
+    setFormData({ name: "", email: "", role: "مدير نظام", phone: "" })
+    toast.success("تم إضافة الموظف بنجاح")
   }
 
   const inputClass =
@@ -275,32 +320,52 @@ export default function StaffPage() {
             <div className="space-y-4">
               <div>
                 <label className="mb-2 block text-sm font-semibold text-foreground">
-                  اسم الموظف
+                  اسم الموظف <span className="text-destructive">*</span>
                 </label>
                 <input
                   type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className={inputClass}
                   placeholder="ادخل الاسم الكامل"
                 />
               </div>
               <div>
                 <label className="mb-2 block text-sm font-semibold text-foreground">
-                  البريد الإلكتروني
+                  البريد الإلكتروني <span className="text-destructive">*</span>
                 </label>
                 <input
                   type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   className={inputClass}
                   placeholder="example@khatwa.com"
                 />
               </div>
               <div>
                 <label className="mb-2 block text-sm font-semibold text-foreground">
+                  رقم الهاتف
+                </label>
+                <input
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  className={inputClass}
+                  placeholder="01xxxxxxxxx"
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-foreground">
                   الصلاحية
                 </label>
-                <select className={inputClass}>
-                  <option>مدير نظام</option>
-                  <option>محرر محتوى</option>
-                  <option>مشرف عيادات</option>
+                <select
+                  value={formData.role}
+                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                  className={inputClass}
+                >
+                  <option value="مدير نظام">مدير نظام</option>
+                  <option value="محرر محتوى">محرر محتوى</option>
+                  <option value="مشرف عيادات">مشرف عيادات</option>
                 </select>
               </div>
             </div>
@@ -312,13 +377,10 @@ export default function StaffPage() {
                 إلغاء
               </button>
               <button
-                onClick={() => {
-                  toast.success("تم إضافة الموظف بنجاح (محاكاة)")
-                  setIsAddModalOpen(false)
-                }}
+                onClick={handleAddMember}
                 className="rounded-xl bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90"
               >
-                حفظ
+                حفظ الموظف
               </button>
             </div>
           </div>

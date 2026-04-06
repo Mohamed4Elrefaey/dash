@@ -107,10 +107,17 @@ export async function apiClient<T>(
       errorData = await res.json()
     } catch {}
 
-    const message =
-      errorData.message ||
-      errorData.error ||
-      getArabicErrorMessage(res.status)
+    let message = errorData.message || errorData.error
+
+    if (!message && errorData.errors) {
+      const firstError = Object.values(errorData.errors)[0]
+      if (Array.isArray(firstError)) message = firstError[0]
+      else if (typeof firstError === "string") message = firstError
+    }
+
+    if (!message) {
+      message = getArabicErrorMessage(res.status)
+    }
 
     throw new ApiError(message, res.status, errorData.errors)
   }

@@ -10,8 +10,8 @@ interface TopbarProps {
 }
 
 const roleLabels: Record<string, string> = {
-  super_admin: "مدير النظام",
-  admin: "موظف",
+  admin: "مدير النظام",
+  staff: "موظف",
   user: "مستخدم",
 }
 

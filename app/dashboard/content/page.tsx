@@ -36,6 +36,8 @@ export default function ContentPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isPostModalOpen, setIsPostModalOpen] = useState(false)
   const [editingArticle, setEditingArticle] = useState<Article | null>(null)
+  const [editingMedicine, setEditingMedicine] = useState<Medicine | null>(null)
+  const [editingPost, setEditingPost] = useState<Post | null>(null)
   const [addLoading, setAddLoading] = useState(false)
   const [postAddLoading, setPostAddLoading] = useState(false)
   const [viewingArticle, setViewingArticle] = useState<Article | null>(null)
@@ -118,6 +120,38 @@ export default function ContentPage() {
       toast.error(err instanceof Error ? err.message : "تعذر إضافة المقال")
     } finally {
       setAddLoading(false)
+    }
+  }
+
+  async function handleUpdatePost(data: CreatePostDto) {
+    if (!editingPost) return
+    setPostAddLoading(true)
+    try {
+      await postsRepository.updatePost(editingPost.id, data)
+      toast.success("تم تحديث المنشور بنجاح")
+      setIsPostModalOpen(false)
+      setEditingPost(null)
+      fetchPosts()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "تعذر تحديث المنشور")
+    } finally {
+      setPostAddLoading(false)
+    }
+  }
+
+  async function handleUpdateMedicine(data: MedicinePayload) {
+    if (!editingMedicine) return
+    setMedicineAddLoading(true)
+    try {
+      await medicinesRepository.updateMedicine(editingMedicine.id, data)
+      toast.success("تم تحديث الدواء بنجاح")
+      setIsAddMedicineModalOpen(false)
+      setEditingMedicine(null)
+      fetchMedicines()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "تعذر تحديث الدواء")
+    } finally {
+      setMedicineAddLoading(false)
     }
   }
 
@@ -357,6 +391,16 @@ export default function ContentPage() {
                       {post.createdAt && <span>{post.createdAt}</span>}
                     </div>
                     <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          setEditingPost(post)
+                          setIsPostModalOpen(true)
+                        }}
+                        className="inline-flex items-center gap-1 rounded-lg border border-primary px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/5 transition-colors"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                        تعديل
+                      </button>
                       <button onClick={() => setDeletePostTarget(post)} className="inline-flex items-center gap-1 rounded-lg border border-destructive px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/5 transition-colors"><Trash2 className="h-3.5 w-3.5" />حذف</button>
                     </div>
                   </div>
@@ -412,6 +456,16 @@ export default function ContentPage() {
                     <p className="mb-3 text-xs leading-relaxed text-muted-foreground line-clamp-2">{medicine.description}</p>
                     <div className="flex items-center gap-2">
                       <button onClick={() => setViewingMedicine(medicine)} className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 transition-opacity"><Eye className="h-3.5 w-3.5" />عرض</button>
+                      <button
+                        onClick={() => {
+                          setEditingMedicine(medicine)
+                          setIsAddMedicineModalOpen(true)
+                        }}
+                        className="inline-flex items-center gap-1 rounded-lg border border-primary px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/5 transition-colors"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                        تعديل
+                      </button>
                       <button onClick={() => setDeleteMedicineTarget(medicine)} className="inline-flex items-center gap-1 rounded-lg border border-destructive px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/5 transition-colors"><Trash2 className="h-3.5 w-3.5" />حذف</button>
                     </div>
                   </div>
@@ -487,9 +541,13 @@ export default function ContentPage() {
       {/* Add Medicine Modal */}
       <AddMedicineModal
         isOpen={isAddMedicineModalOpen}
-        onClose={() => setIsAddMedicineModalOpen(false)}
-        onSubmit={handleAddMedicine}
+        onClose={() => {
+          setIsAddMedicineModalOpen(false)
+          setEditingMedicine(null)
+        }}
+        onSubmit={editingMedicine ? handleUpdateMedicine : handleAddMedicine}
         loading={medicineAddLoading}
+        initialData={editingMedicine}
       />
 
       {/* Delete Confirm */}
@@ -531,9 +589,13 @@ export default function ContentPage() {
       {/* Add Post Modal */}
       <AddPostModal
         isOpen={isPostModalOpen}
-        onClose={() => setIsPostModalOpen(false)}
-        onSubmit={handleAddPost}
+        onClose={() => {
+          setIsPostModalOpen(false)
+          setEditingPost(null)
+        }}
+        onSubmit={editingPost ? handleUpdatePost : handleAddPost}
         loading={postAddLoading}
+        initialData={editingPost}
       />
     </div>
   )
@@ -544,11 +606,13 @@ function AddMedicineModal({
   onClose,
   onSubmit,
   loading,
+  initialData,
 }: {
   isOpen: boolean
   onClose: () => void
   onSubmit: (data: MedicinePayload) => void
   loading: boolean
+  initialData?: Medicine | null
 }) {
   const [form, setForm] = useState<MedicinePayload>({
     name: "",
@@ -563,18 +627,30 @@ function AddMedicineModal({
 
   useEffect(() => {
     if (isOpen) {
-      setForm({
-        name: "",
-        description: "",
-        category: "",
-        form: "",
-        usage: "",
-        sideEffects: "",
-        imageUrl: "",
-      })
+      if (initialData) {
+        setForm({
+          name: initialData.name || "",
+          description: initialData.description || "",
+          category: initialData.category || "",
+          form: initialData.form || "",
+          usage: initialData.usage || "",
+          sideEffects: initialData.sideEffects || "",
+          imageUrl: initialData.imageUrl || "",
+        })
+      } else {
+        setForm({
+          name: "",
+          description: "",
+          category: "",
+          form: "",
+          usage: "",
+          sideEffects: "",
+          imageUrl: "",
+        })
+      }
       setErrors({})
     }
-  }, [isOpen])
+  }, [isOpen, initialData])
 
   const validate = () => {
     const errs: Record<string, string> = {}
@@ -593,8 +669,12 @@ function AddMedicineModal({
       <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-card shadow-xl">
         <div className="relative border-b border-border px-6 py-5 text-center">
           <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10"><Pill className="h-7 w-7 text-primary" /></div>
-          <h2 className="text-xl font-bold text-foreground">إضافة دواء جديد</h2>
-          <p className="mt-1 text-sm text-muted-foreground">قم بإدخال بيانات الدواء لإضافته للنظام</p>
+          <h2 className="text-xl font-bold text-foreground">
+            {initialData ? "تعديل بيانات الدواء" : "إضافة دواء جديد"}
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {initialData ? "قم بتعديل بيانات الدواء" : "قم بإدخال بيانات الدواء لإضافته للنظام"}
+          </p>
           <button onClick={onClose} className="absolute start-4 top-4 rounded-lg p-1 text-muted-foreground hover:bg-muted"><X className="h-5 w-5" /></button>
         </div>
         <div className="space-y-4 px-6 py-5">
@@ -631,7 +711,8 @@ function AddMedicineModal({
         </div>
         <div className="flex items-center justify-center gap-3 border-t border-border px-6 py-4">
           <button onClick={() => { if (validate()) onSubmit(form) }} disabled={loading} className="flex items-center gap-2 rounded-xl bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">
-            {loading ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" /> : <CheckCircle className="h-4 w-4" />}إضافة
+            {loading ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" /> : <CheckCircle className="h-4 w-4" />}
+            {initialData ? "حفظ التعديلات" : "إضافة"}
           </button>
           <button onClick={onClose} className="rounded-xl border border-border px-6 py-2.5 text-sm font-medium text-foreground hover:bg-muted">إلغاء</button>
         </div>
@@ -645,21 +726,31 @@ function AddPostModal({
   onClose,
   onSubmit,
   loading,
+  initialData,
 }: {
   isOpen: boolean
   onClose: () => void
   onSubmit: (data: CreatePostDto) => void
   loading: boolean
+  initialData?: Post | null
 }) {
   const [form, setForm] = useState<CreatePostDto>({ title: "", content: "", imageUrl: "" })
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
     if (isOpen) {
-      setForm({ title: "", content: "", imageUrl: "" })
+      if (initialData) {
+        setForm({
+          title: initialData.title || "",
+          content: initialData.content || "",
+          imageUrl: initialData.imageUrl || "",
+        })
+      } else {
+        setForm({ title: "", content: "", imageUrl: "" })
+      }
       setErrors({})
     }
-  }, [isOpen])
+  }, [isOpen, initialData])
 
   const validate = () => {
     const errs: Record<string, string> = {}
@@ -684,8 +775,12 @@ function AddPostModal({
           <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10">
             <MessageSquare className="h-7 w-7 text-primary" />
           </div>
-          <h2 className="text-xl font-bold text-foreground">انشاء منشور جديد</h2>
-          <p className="mt-1 text-sm text-muted-foreground">شارك تجربتك مع المجتمع</p>
+          <h2 className="text-xl font-bold text-foreground">
+            {initialData ? "تعديل المنشور" : "انشاء منشور جديد"}
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {initialData ? "قم بتعديل بيانات المنشور" : "شارك تجربتك مع المجتمع"}
+          </p>
           <button
             onClick={onClose}
             className="absolute start-4 top-4 rounded-lg p-1 text-muted-foreground hover:bg-muted"
@@ -745,7 +840,7 @@ function AddPostModal({
             ) : (
               <CheckCircle className="h-4 w-4" />
             )}
-            إضافة المنشور
+            {initialData ? "حفظ التعديلات" : "إضافة المنشور"}
           </button>
           <button
             onClick={onClose}

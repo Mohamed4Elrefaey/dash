@@ -10,5 +10,8 @@ export const postsRepository = {
 
   createPost: (data: CreatePostDto) => postsService.create(data),
 
+  updatePost: (id: string | number, data: Partial<CreatePostDto>) =>
+    postsService.update(id, data),
+
   deletePost: (id: string | number) => postsService.delete(id),
 }
