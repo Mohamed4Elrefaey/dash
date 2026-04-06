@@ -91,12 +91,12 @@ export default function StaffPage() {
   }, [staff])
 
   useEffect(() => {
-    if (!isLoading && user && user.role !== "admin") {
+    if (!isLoading && user && !["admin", "super_admin"].includes(user.role)) {
       router.push("/dashboard")
     }
   }, [user, isLoading, router])
 
-  if (isLoading || (user && user.role !== "admin")) {
+  if (isLoading || (user && !["admin", "super_admin"].includes(user.role))) {
     return null
   }
 

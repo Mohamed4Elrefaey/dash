@@ -31,7 +31,7 @@ const systemMenuItems = [
 ]
 
 const reportsMenuItems = [
-  { label: "ادارة الموظفين", href: "/dashboard/staff", icon: Users, roles: ["admin"] },
+  { label: "ادارة الموظفين", href: "/dashboard/staff", icon: Users, roles: ["admin", "super_admin"] },
   { label: "التقارير و التحليلات", href: "/dashboard/reports", icon: BarChart3 },
   { label: "اعدادات النظام", href: "/dashboard/settings", icon: Settings },
 ]
