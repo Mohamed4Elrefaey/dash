@@ -19,14 +19,14 @@ export interface CreatePostDto {
 
 export const postsService = {
   getAll: (page = 1, limit = 10) =>
-    apiClient<ApiResponse<Post[]>>(`/posts?page=${page}&limit=${limit}`),
+    apiClient<ApiResponse<Post[]>>(`/community?page=${page}&limit=${limit}`),
 
   create: (data: CreatePostDto) =>
-    apiClient<Post>("/posts", { method: "POST", body: data }),
+    apiClient<Post>("/community", { method: "POST", body: data }),
 
   update: (id: string | number, data: Partial<CreatePostDto>) =>
-    apiClient<Post>(`/posts/${id}`, { method: "PUT", body: data }),
+    apiClient<Post>(`/community/${id}`, { method: "PUT", body: data }),
 
   delete: (id: string | number) =>
-    apiClient<void>(`/posts/${id}`, { method: "DELETE" }),
+    apiClient<void>(`/community/${id}`, { method: "DELETE" }),
 }
