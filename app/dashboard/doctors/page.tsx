@@ -37,11 +37,19 @@ export default function DoctorsPage() {
   async function handleAddDoctor(data: DoctorPayload) {
     setAddLoading(true)
     try {
-      await doctorsRepository.createDoctor(data)
+      const payload = {
+        ...data,
+        longitude: data.longitude || 0,
+        latitude: data.latitude || 0,
+        price: Number(data.price) || 0,
+        clinics: Array.isArray(data.clinics) ? data.clinics : [],
+      }
+      await doctorsRepository.createDoctor(payload)
       toast.success("تم إضافة الطبيب بنجاح")
       setIsAddModalOpen(false)
       fetchDoctors()
     } catch (err) {
+      console.error("Add doctor error:", err)
       toast.error(err instanceof Error ? err.message : "تعذر إضافة الطبيب")
     } finally {
       setAddLoading(false)

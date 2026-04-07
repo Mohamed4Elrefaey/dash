@@ -2,8 +2,9 @@
 
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
-import { getToken, getStoredUser, removeToken } from "@/lib/api-client"
+import { getToken, getStoredUser } from "@/lib/api-client"
 import { authRepository } from "@/lib/repositories/auth.repository"
+import { authService } from "@/lib/services/auth"
 import { type User } from "@/lib/models/auth.model"
 
 interface AuthContextType {
@@ -25,7 +26,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const token = getToken()
     const storedUser = getStoredUser()
     if (token && storedUser) {
-      setUser(storedUser)
+      setUser({
+        ...storedUser,
+        role: storedUser.role?.toLowerCase() || "staff",
+      })
     }
     setIsLoading(false)
   }, [])
@@ -33,7 +37,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(
     async (email: string, password: string) => {
       const response = await authRepository.login({ email, password })
-      const userData: User = response.user
+      const userData: User = {
+        ...response.user,
+        role: response.user.role?.toLowerCase() || "staff",
+      }
       setUser(userData)
       router.push("/dashboard")
     },

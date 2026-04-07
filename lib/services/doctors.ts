@@ -11,4 +11,7 @@ export const doctorsService = {
 
   getNearby: (lat: number, lng: number, dist = 10000) =>
     apiClient<Doctor[]>(`/doctors/nearby?lat=${lat}&lng=${lng}&dist=${dist}`),
+
+  delete: (id: string | number) =>
+    apiClient(`/doctors/${id}`, { method: "DELETE" }),
 }

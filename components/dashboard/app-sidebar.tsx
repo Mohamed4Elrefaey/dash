@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useAuth } from "@/lib/auth-context"
 import {
   LayoutGrid,
   Baby,
@@ -30,7 +31,7 @@ const systemMenuItems = [
 ]
 
 const reportsMenuItems = [
-  { label: "ادارة الموظفين", href: "/dashboard/staff", icon: Users },
+  { label: "ادارة الموظفين", href: "/dashboard/staff", icon: Users, roles: ["admin", "super_admin"] },
   { label: "التقارير و التحليلات", href: "/dashboard/reports", icon: BarChart3 },
   { label: "اعدادات النظام", href: "/dashboard/settings", icon: Settings },
 ]
@@ -41,13 +42,16 @@ interface AppSidebarProps {
 
 export function AppSidebar({ onLogout }: AppSidebarProps) {
   const pathname = usePathname()
+  const { user } = useAuth()
 
   const isActive = (href: string) => {
     if (href === "/dashboard") return pathname === "/dashboard"
     return pathname.startsWith(href)
   }
 
-  const renderItem = (item: { label: string; href: string; icon: React.ElementType }) => {
+  const renderItem = (item: { label: string; href: string; icon: React.ElementType; roles?: string[] }) => {
+    if (item.roles && (!user?.role || !item.roles.includes(user.role))) return null
+
     const Icon = item.icon
     const active = isActive(item.href)
 

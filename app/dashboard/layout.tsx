@@ -35,12 +35,12 @@ export default function DashboardLayout({
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      {/* Main content area - comes first in RTL */}
-      <div className="flex flex-1 flex-col overflow-hidden">
+      {/* Main content area - shifted left by order-1 in RTL flex */}
+      <div className="flex flex-1 flex-col overflow-hidden order-1">
         <Topbar userName={user.name} userRole={user.role} />
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
-      {/* Sidebar - right side in RTL */}
+      {/* Sidebar - appears on the right in RTL because it's first in DOM order and content has order-1 */}
       <AppSidebar onLogout={logout} />
     </div>
   )
